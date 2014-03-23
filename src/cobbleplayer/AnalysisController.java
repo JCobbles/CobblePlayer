@@ -1,8 +1,9 @@
 package cobbleplayer;
 
 import static cobbleplayer.GUIController.samples;
+import cobbleplayer.ca.AmplitudeAnalyser;
 import cobbleplayer.ca.AmplitudeCollector;
-import cobbleplayer.ca.FreqListener;
+import cobbleplayer.ca.CollectionListener;
 import cobbleplayer.ca.FrequencyCollector;
 import cobbleplayer.utilities.Util;
 import ddf.minim.AudioPlayer;
@@ -33,13 +34,13 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
 import javafx.util.Callback;
-//yayay
+
 /**
  *
  * @author Jacob
  */
-public class AnalysisController implements Initializable, FreqListener {
-    
+public class AnalysisController implements Initializable, CollectionListener {
+
     @FXML
     public static TextField position, songBeingAnalysed; //20-1000, 1000-3000, 3000-10000, -30000, -60000, -100000
     @FXML
@@ -57,11 +58,11 @@ public class AnalysisController implements Initializable, FreqListener {
     private Song cobbleSong;
     public static final XYChart.Series series = new XYChart.Series();
     Minim minim;
-    
+
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         tabPane.setOnMousePressed(new EventHandler<MouseEvent>() {
-            
+
             @Override
             public void handle(MouseEvent t) {
 //                tabPane.getSelectionModel().select(curTab);
@@ -107,7 +108,7 @@ public class AnalysisController implements Initializable, FreqListener {
             Util.err("SONGCHOOSER IS NULL");
         }
         songChooser.setCellFactory(new Callback<ListView<Song>, ListCell<Song>>() {
-            
+
             @Override
             public ListCell<Song> call(ListView<Song> p) {
                 final ListCell<Song> sc = new ListCell<Song>() {
@@ -124,7 +125,7 @@ public class AnalysisController implements Initializable, FreqListener {
             }
         });
         songChooser.setOnAction(new EventHandler<ActionEvent>() {
-            
+
             @Override
             public void handle(ActionEvent t) {
                 cobbleSong = (Song) songChooser.getSelectionModel().getSelectedItem();
@@ -140,12 +141,14 @@ public class AnalysisController implements Initializable, FreqListener {
             }
         });
     }
-    
+
     private void amplitudeAnalysis() {
         series.setName("Amplitude data");
-        new Thread(new AmplitudeCollector(new File(cobbleSong.getFilepath()))).start();
+        AmplitudeCollector col = new AmplitudeCollector(new File(cobbleSong.getFilepath()));
+        col.
+        new Thread(col).start();
     }
-    
+
     public void analyse(boolean freq, boolean amp) {
         Util.err(cobbleSong.toString());
         GUIController.analyserModal.setTitle("Analyser :: " + cobbleSong.toString());
@@ -159,15 +162,15 @@ public class AnalysisController implements Initializable, FreqListener {
         if (amp) {
             amplitudeAnalysis();
         }
-        
+
     }
-    
+
     private void frequencyAnalysis(final AudioPlayer song) {
         FrequencyCollector col = new FrequencyCollector(song);
         col.setListener(this);
         new Thread(col).start();
     }
-    
+
     public void finishFreqAnalysis(List<Float> one, List<Float> two, List<Float> three, List<Float> four, List<Float> five, List<Float> six) {
         for (int i = 0; i < one.size(); i++) {
             freqTable.getItems().add(new Item(one.get(i), two.get(i), three.get(i),
@@ -185,50 +188,51 @@ public class AnalysisController implements Initializable, FreqListener {
         freqTable.scrollTo(samples);
         tabPane.getSelectionModel().clearAndSelect(1);
     }
-    
-    private void finishAmpAnalysis(float r, float s) {
-        
-    }
-    
+
     public void give(Song song) {
         analyse.setDisable(true);
         this.cobbleSong = song;
     }
-    
+
     public void reset() {
-        
+
         series.getData().remove(0, series.getData().size());
         ampChart.getData().remove(series);
 
 //        ObservableList<Item> dataaa = FXCollections.observableArrayList();
 //        freqTable.setItems(dataaa);
         freqTable.getItems().remove(0, freqTable.getItems().size());
-        
+
     }
-    
+
     @Override
-    public void collectionFinished(List<Float> one, List<Float> two, List<Float> three, List<Float> four, List<Float> five, List<Float> six) {
+    public void freqCollectionFinished(List<Float> one, List<Float> two, List<Float> three, List<Float> four, List<Float> five, List<Float> six) {
         Util.err("YAY");
         finishFreqAnalysis(one, two, three, four, five, six);
     }
-    
+
+    @Override
+    public void ampCollectionFinished(short[] amplitudes) {
+        new Thread(new AmplitudeAnalyser(amplitudes)).start();
+    }
+
     public String sketchPath(String filename) { //required by minim
         return "penguin";
     }
-    
+
     public InputStream createInput(String filename) { //needed by minim
         try {
             return new FileInputStream(new File(cobbleSong.getFilepath()));
         } catch (FileNotFoundException ex) {
             return null;
-            
+
         }
     }
-    
+
     public class Item {
-        
+
         public float one, two, three, four, five, six;
-        
+
         public Item(float one, float two, float three, float four, float five, float six) {
             this.one = one;
             this.two = two;
