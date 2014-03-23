@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.paint.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane id="AnchorPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/2.2">
+  <children>
+    <TabPane prefHeight="400.0" prefWidth="600.0" tabClosingPolicy="UNAVAILABLE" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+      <tabs>
+        <Tab text="General">
+          <content>
+            <AnchorPane id="Content" minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+              <children>
+                <VBox id="VBox" alignment="CENTER" prefHeight="369.0" prefWidth="600.0" spacing="5.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                  <children>
+                    <HBox prefHeight="30.0" prefWidth="600.0" VBox.vgrow="SOMETIMES">
+                      <children>
+                        <Label text="Autoload -">
+                          <font>
+                            <Font name="System Bold" size="14.0" fx:id="x1" />
+                          </font>
+                        </Label>
+                        <Region prefHeight="369.0" prefWidth="12.0" />
+                        <Label prefWidth="189.0" text="Save playlists/imported songs">
+                          <font>
+                            <Font size="13.0" fx:id="x2" />
+                          </font>
+                        </Label>
+                        <CheckBox fx:id="SAutoload" mnemonicParsing="false" text="" />
+                      </children>
+                    </HBox>
+                    <HBox prefHeight="65.0" prefWidth="600.0">
+                      <children>
+                        <Label font="$x1" prefWidth="149.0" text="Show exit message -" />
+                        <Label font="$x2" prefWidth="212.0" text="Display exit confirmation message" />
+                        <CheckBox fx:id="SShow" mnemonicParsing="false" text="" />
+                      </children>
+                    </HBox>
+                    <HBox prefHeight="326.0" prefWidth="600.0" />
+                  </children>
+                </VBox>
+              </children>
+            </AnchorPane>
+          </content>
+        </Tab>
+        <Tab text="Song analysis">
+          <content>
+            <AnchorPane id="Content" minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+              <children>
+                <VBox prefHeight="369.0" prefWidth="600.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                  <children>
+                    <HBox prefHeight="90.0" prefWidth="600.0">
+                      <children>
+                        <Label font="$x1" prefWidth="117.0" text="Genre analysis" />
+                        <TextArea editable="false" prefHeight="90.0" prefWidth="341.0" text="Automatically analyses media files and attempts to find a genre match.&#10;It takes some time to analyse so you can choose how many samples to take (per song). More samples means more time taken. The default is 15.&#10;You can turn this feature off and decide the genre yourself." wrapText="true" HBox.hgrow="ALWAYS" />
+                        <VBox prefHeight="90.0" prefWidth="131.0">
+                          <children>
+                            <TextField fx:id="samplesField" prefWidth="200.0" promptText="Samples (default 15)" VBox.vgrow="ALWAYS" />
+                          </children>
+                        </VBox>
+                      </children>
+                    </HBox>
+                  </children>
+                </VBox>
+              </children>
+            </AnchorPane>
+          </content>
+        </Tab>
+      </tabs>
+    </TabPane>
+  </children>
+</AnchorPane>

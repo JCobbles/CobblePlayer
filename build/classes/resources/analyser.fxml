@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.net.*?>
+<?import java.util.*?>
+<?import javafx.collections.*?>
+<?import javafx.scene.chart.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.paint.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane id="AnchorPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="463.0" prefWidth="795.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/2.2">
+  <children>
+    <TabPane fx:id="tabPane" prefHeight="400.0" prefWidth="600.0" tabClosingPolicy="UNAVAILABLE" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+      <tabs>
+        <Tab text="Analyse">
+          <content>
+            <AnchorPane id="Content" minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+              <children>
+                <VBox prefHeight="410.0" prefWidth="688.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                  <children>
+                    <HBox alignment="CENTER" prefHeight="29.0" prefWidth="688.0">
+                      <children>
+                        <Label text="Song:  " />
+                        <ComboBox fx:id="songChooser" prefHeight="21.0" prefWidth="149.0">
+                          <items>
+                            <FXCollections fx:factory="observableArrayList">
+                              <String fx:value="Item 1" />
+                              <String fx:value="Item 2" />
+                              <String fx:value="Item 3" />
+                            </FXCollections>
+                          </items>
+                        </ComboBox>
+                      </children>
+                    </HBox>
+                    <VBox id="VBox" alignment="CENTER" spacing="5.0">
+                      <children>
+                        <CheckBox fx:id="checkFreq" mnemonicParsing="false" text="Frequency analysis" />
+                        <CheckBox fx:id="checkRhythm" mnemonicParsing="false" text="Rhythm analysis" />
+                        <Button fx:id="analyse" cancelButton="false" defaultButton="true" mnemonicParsing="false" text="Analyse selected song">
+                          <font>
+                            <Font name="System Bold" size="16.0" />
+                          </font>
+                        </Button>
+                      </children>
+                    </VBox>
+                  </children>
+                </VBox>
+              </children>
+            </AnchorPane>
+          </content>
+        </Tab>
+        <Tab text="Frequency spectrum">
+          <content>
+            <AnchorPane id="Content" minHeight="0.0" minWidth="0.0" prefHeight="212.0" prefWidth="600.0">
+              <children>
+                <Label layoutX="207.0" layoutY="0.0" text="Frequency averages">
+                  <font>
+                    <Font name="System Bold" size="20.0" />
+                  </font>
+                </Label>
+                <VBox id="VBox" alignment="CENTER" prefHeight="382.0" prefWidth="688.0" spacing="5.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="28.0">
+                  <children>
+                    <TableView fx:id="freqTable" prefHeight="202.0" prefWidth="600.0" VBox.vgrow="ALWAYS">
+                      <columns>
+                        <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="82.0" text="20-1000Hz" />
+                        <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="98.0" text="1000-3000Hz" />
+                        <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="104.0" text="3000-15,000Hz" />
+                        <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="106.0" text="15,000-35,000Hz" />
+                        <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="103.0" text="35,000-60,000Hz" />
+                        <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="131.0" text="60,000-100,000Hz" />
+                      </columns>
+                      <stylesheets>
+                        <URL value="@cobble.css" />
+                      </stylesheets>
+                    </TableView>
+                    <HBox id="HBox" alignment="CENTER" spacing="5.0">
+                      <children>
+                        <HBox id="HBox" alignment="CENTER" prefWidth="177.0" spacing="5.0">
+                          <children>
+                            <Label text="Analysing:" />
+                            <TextField fx:id="songBeingAnalysed" minHeight="20.0" prefWidth="111.0" />
+                          </children>
+                        </HBox>
+                        <HBox id="HBox" alignment="CENTER" spacing="5.0">
+                          <children>
+                            <Label text="Position/s:" />
+                            <TextField fx:id="position" minHeight="20.0" prefWidth="31.0" />
+                          </children>
+                        </HBox>
+                      </children>
+                    </HBox>
+                  </children>
+                </VBox>
+              </children>
+            </AnchorPane>
+          </content>
+        </Tab>
+        <Tab text="Amplitude analysis">
+          <content>
+            <AnchorPane id="Content" minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+              <children>
+                <LineChart fx:id="ampChart" prefHeight="410.0" prefWidth="688.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                  <xAxis>
+                    <NumberAxis side="BOTTOM" />
+                  </xAxis>
+                  <yAxis>
+                    <NumberAxis side="LEFT" />
+                  </yAxis>
+                </LineChart>
+              </children>
+            </AnchorPane>
+          </content>
+        </Tab>
+      </tabs>
+    </TabPane>
+  </children>
+</AnchorPane>

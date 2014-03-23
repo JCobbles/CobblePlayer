@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<jnlp spec="1.0" xmlns:jfx="http://javafx.com" href="CobblePlayer.jnlp">
+  <information>
+    <title>CobblePlayer</title>
+    <vendor>Jacob</vendor>
+    <description>null</description>
+    <offline-allowed/>
+  </information>
+  <resources>
+    <jfx:javafx-runtime version="2.2+" href="http://javadl.sun.com/webapps/download/GetFile/javafx-latest/windows-i586/javafx2.jnlp"/>
+  </resources>
+  <resources>
+    <j2se version="1.6+" href="http://java.sun.com/products/autodl/j2se"/>
+    <jar href="CobblePlayer.jar" size="122650" download="eager" />
+    <jar href="lib/jid3lib-0.5.4.jar" size="192186" download="eager" />
+    <jar href="lib/jlayer_custom.jar" size="77648" download="eager" />
+    <jar href="lib/minim.jar" size="147464" download="eager" />
+    <jar href="lib/mp3spi1.9.5.jar" size="24696" download="eager" />
+    <jar href="lib/tritonus_share-0.3.6.jar" size="105684" download="eager" />
+  </resources>
+  <applet-desc  width="800" height="600" main-class="com.javafx.main.NoJavaFXFallback"  name="CobblePlayer" >
+    <param name="requiredFXVersion" value="2.2+"/>
+  </applet-desc>
+  <jfx:javafx-desc  width="800" height="600" main-class="cobbleplayer.Main"  name="CobblePlayer" />
+  <update check="always"/>
+</jnlp>
