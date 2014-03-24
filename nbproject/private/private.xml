@@ -6,9 +6,11 @@
             <file>file:/C:/Users/Jacob/Dropbox/Programming/Java/CobblePlayer/src/cobbleplayer/ca/AmplitudeCollector.java</file>
             <file>file:/C:/Users/Jacob/Dropbox/Programming/Java/CobblePlayer/src/cobbleplayer/GUIController.java</file>
             <file>file:/C:/Users/Jacob/Dropbox/Programming/Java/CobblePlayer/src/cobbleplayer/Main.java</file>
+            <file>file:/C:/Users/Jacob/Dropbox/Programming/Java/CobblePlayer/src/cobbleplayer/SettingsController.java</file>
             <file>file:/C:/Users/Jacob/Dropbox/Programming/Java/CobblePlayer/src/cobbleplayer/utilities/ModalDialog.java</file>
-            <file>file:/C:/Users/Jacob/Dropbox/Programming/Java/CobblePlayer/src/cobbleplayer/ca/FreqListener.java</file>
-            <file>file:/C:/Users/Jacob/Dropbox/Programming/Java/CobblePlayer/src/cobbleplayer/ca/FrequencyCollector.java</file>
+            <file>file:/C:/Users/Jacob/Dropbox/Programming/Java/CobblePlayer/src/cobbleplayer/SongListener.java</file>
+            <file>file:/C:/Users/Jacob/Dropbox/Programming/Java/CobblePlayer/src/cobbleplayer/MusicController.java</file>
+            <file>file:/C:/Users/Jacob/Dropbox/Programming/Java/CobblePlayer/src/cobbleplayer/ca/AmplitudeAnalyser.java</file>
             <file>file:/C:/Users/Jacob/Dropbox/Programming/Java/CobblePlayer/src/cobbleplayer/utilities/Util.java</file>
             <file>file:/C:/Users/Jacob/Dropbox/Programming/Java/CobblePlayer/src/cobbleplayer/Playlist.java</file>
             <file>file:/C:/Users/Jacob/Dropbox/Programming/Java/CobblePlayer/src/cobbleplayer/AnalysisController.java</file>

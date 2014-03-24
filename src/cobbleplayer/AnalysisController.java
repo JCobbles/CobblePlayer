@@ -145,7 +145,7 @@ public class AnalysisController implements Initializable, CollectionListener {
     private void amplitudeAnalysis() {
         series.setName("Amplitude data");
         AmplitudeCollector col = new AmplitudeCollector(new File(cobbleSong.getFilepath()));
-        col.
+        col.setListener(this);
         new Thread(col).start();
     }
 

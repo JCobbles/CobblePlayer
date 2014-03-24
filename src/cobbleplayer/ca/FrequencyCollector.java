@@ -23,7 +23,7 @@ import java.util.List;
 public class FrequencyCollector implements Runnable {
 
     private AudioPlayer song;
-    private FreqListener listener;
+    private CollectionListener listener;
 
     public FrequencyCollector(AudioPlayer song) {
         this.song = song;
@@ -77,7 +77,7 @@ public class FrequencyCollector implements Runnable {
     private void addSampleList(List<Float> list) {
         listOfSamples.add(list);
     }
-    public void setListener(FreqListener list) {
+    public void setListener(CollectionListener list) {
         listener = list;
     }
 }

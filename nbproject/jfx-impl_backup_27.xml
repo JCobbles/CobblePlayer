@@ -1785,10 +1785,8 @@
                         var f2 = res.createFileSet();
                         f2.setProject(project);
                         f2.setDir(new java.io.File(pdir));
-                        var i2a = new String(project.getProperty("jfx.deployment.jar"));
                         var i2b = new String(project.getProperty("pp_jar_fs2"));
                         var e2c = new String(project.getProperty("pp_jar_fs1"));
-                        f2.setIncludes(i2a);
                         f2.setIncludes(i2b);
                         f2.setExcludes(e2c);
                         f2.setRequiredFor("startup");
@@ -1804,9 +1802,7 @@
                         var fn = res.createFileSet();
                         fn.setProject(project);
                         fn.setDir(new java.io.File(pdir));
-                        var ia = new String(project.getProperty("jfx.deployment.jar"));
                         var ib = new String(project.getProperty("pp_jar_fs2"));
-                        fn.setIncludes(ia);
                         fn.setIncludes(ib);
                         fn.setRequiredFor("startup");
                         var lazyjars = getLazyJars();
@@ -2152,8 +2148,18 @@
                     var outfile = new String(project.getProperty("application.title"));
                     var includeDT = new String(project.getProperty("javafx.deploy.includeDT"));
                     var offline = new String(project.getProperty("javafx.deploy.allowoffline"));
-                    deploy.setWidth(width);
-                    deploy.setHeight(height);
+                    if (width.indexOf("%") != -1) {
+                        deploy.setEmbeddedWidth(width);
+                        deploy.setWidth(800);
+                    } else {
+                        deploy.setWidth(width);
+                    }
+                    if (height.indexOf("%") != -1) {
+                        deploy.setEmbeddedHeight(height);
+                        deploy.setHeight(600);
+                    } else {
+                        deploy.setHeight(height);
+                    }
                     deploy.setOutdir(outdir);
                     deploy.setEmbedJNLP(isTrue(embedJNLP));
                     deploy.setUpdateMode(updatemode);
@@ -3406,10 +3412,12 @@
 
     <target name="build-native">
         <property name="javafx.native.bundling.type" value="${native.bundling.type}"/>
+        <property name="transfer.not.archive.disabled" value="true"/>
         <antcall target="jfx-build-native"/>
     </target>
     <target name="build-native-noscript">
         <property name="javafx.native.bundling.type" value="${native.bundling.type}"/>
+        <property name="transfer.not.archive.disabled" value="true"/>
         <antcall target="jfx-build-native-noscript"/>
     </target>
     
@@ -3666,6 +3674,29 @@
         </java>
         <antcall target="-remove-temp-run-dir"/>
     </target>
+    <target depends="init,compile,jar,-create-temp-run-dir,-debug-start-debugger" description="Debug JavaFX project standalone." name="jfx-project-debug">
+        <echo message="Executing ${temp.run.jar} using platform ${platform.java}"/>
+        <property name="run.jvmargs" value=""/>
+        <property name="run.jvmargs.ide" value=""/>        
+        <java jar="${temp.run.jar}" dir="${work.dir}" fork="true" jvm="${platform.java}">
+            <jvmarg line="${endorsed.classpath.cmd.line.arg}"/>
+            <jvmarg line="${debug-args-line}"/>
+            <jvmarg value="-Xrunjdwp:transport=${debug-transport},address=${jpda.address}"/>
+            <jvmarg value="-Dfile.encoding=${runtime.encoding}"/>
+            <redirector errorencoding="${runtime.encoding}" inputencoding="${runtime.encoding}" outputencoding="${runtime.encoding}"/>
+            <jvmarg line="${run.jvmargs}"/>
+            <jvmarg line="${run.jvmargs.ide}"/>
+            <classpath>
+                <path path="${temp.run.jar}:${javac.classpath}"/>
+            </classpath>
+            <arg line="${application.args}"/>
+            <syspropertyset>
+                <propertyref prefix="run-sys-prop."/>
+                <mapper from="run-sys-prop.*" to="*" type="glob"/>
+            </syspropertyset>
+        </java>
+        <antcall target="-remove-temp-run-dir"/>
+    </target>
 
 
     <!-- Running/Debugging/Profiling Standalone -->
@@ -3673,7 +3704,7 @@
     <target name="jfxsa-run" depends="-mark-project-state-running,-clean-if-config-changed,-check-jfx-runtime,-warn-of-preloader,jfx-project-run"/>
     <target name="jfxsa-run-noscript" depends="-set-fallback-no-javascript, jfxsa-run"/>
 
-    <target name="jfxsa-debug" depends="-mark-project-state-debugging,-clean-if-config-changed,jar,-check-jfx-runtime,-warn-of-preloader,debug"/>
+    <target name="jfxsa-debug" depends="-mark-project-state-debugging,-clean-if-config-changed,jar,-check-jfx-runtime,-warn-of-preloader,jfx-project-debug"/>
     <target name="jfxsa-debug-noscript" depends="-set-fallback-no-javascript, jfxsa-debug"/>
     
     <target name="jfxsa-profile" depends="-mark-project-state-profiling,-check-jfx-runtime,-warn-of-preloader,profile"/>
@@ -3933,7 +3964,7 @@
         <echo message="Executing ${jfx.deployment.html} in debug mode using ${javafx.run.inbrowser}"/>
         <echo message="(${javafx.run.inbrowser.path})"/>
         <exec executable="${javafx.run.inbrowser.path}">
-            <env key="_JPI_VM_OPTIONS" value="${debug-args-line} -Xrunjdwp:transport=${debug-transport},address=${jpda.address}"/>
+            <env key="_JPI_VM_OPTIONS" value="-agentlib:jdwp=transport=${debug-transport},address=${jpda.address}"/>
             <arg file="${jfx.deployment.html}"/>
         </exec>
     </target>

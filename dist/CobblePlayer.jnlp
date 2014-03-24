@@ -11,7 +11,7 @@
   </resources>
   <resources>
     <j2se version="1.6+" href="http://java.sun.com/products/autodl/j2se"/>
-    <jar href="CobblePlayer.jar" size="122650" download="eager" />
+    <jar href="CobblePlayer.jar" size="137702" download="eager" />
     <jar href="lib/jid3lib-0.5.4.jar" size="192186" download="eager" />
     <jar href="lib/jlayer_custom.jar" size="77648" download="eager" />
     <jar href="lib/minim.jar" size="147464" download="eager" />

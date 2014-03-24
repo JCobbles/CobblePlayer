@@ -31,6 +31,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 public class AmplitudeCollector implements Runnable {
 
     private final File song;
+    private CollectionListener listener;
 
     public AmplitudeCollector(File song) {
         this.song = song;
@@ -111,7 +112,8 @@ public class AmplitudeCollector implements Runnable {
                         });
                         List<Button> buttons = new ArrayList<>();
                         buttons.add(ok);
-                        new ModalDialog("Finished", "Analysis has finished completely.", buttons, 210, 75);
+                        new ModalDialog("Finished", "Collection has finished, proceeding with analysis.", buttons, 210, 75);
+                        listener.ampCollectionFinished(mix);
                     }
                 });
 
@@ -121,4 +123,7 @@ public class AmplitudeCollector implements Runnable {
         }
     }
 
+    public void setListener(CollectionListener list) {
+        listener = list;
+    }
 }
