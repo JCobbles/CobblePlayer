@@ -6,6 +6,7 @@
 package cobbleplayer.ca;
 
 import cobbleplayer.utilities.ModalDialog;
+import cobbleplayer.utilities.Util;
 import java.util.ArrayList;
 import java.util.List;
 import javafx.event.ActionEvent;
@@ -19,6 +20,7 @@ import javafx.scene.control.Button;
 public class AmplitudeAnalyser implements Runnable {
 
     short[] mix;
+    short step_size = 1000;
 
     public AmplitudeAnalyser(short[] amplitudes) {
         mix = amplitudes;
@@ -26,7 +28,7 @@ public class AmplitudeAnalyser implements Runnable {
 
     @Override
     public void run() {
-        short step_size = 1000;
+
         short lower = 50, upper = 50;
 
         if (mix.length < 1000) {
@@ -41,7 +43,12 @@ public class AmplitudeAnalyser implements Runnable {
             bs.add(b);
             new ModalDialog("Error", "Song is not long enought (length of mix < step size)", bs);
         } else {
-
+            int idx = mix.length;
+            while (idx > 0) {
+                if (isWithinThresholds(mix[idx])) {
+                    Util.err(mix[idx] + " within thresholds");
+                }
+            }
         }
         /**
          * start with some step size and threshold limits start with first
@@ -50,6 +57,22 @@ public class AmplitudeAnalyser implements Runnable {
          * have gone through with the same step size add to a list with the
          * amplitude
          */
+    }
+
+    private boolean isWithinThresholds(short s) {
+        int upper = s + step_size;
+        int lower = s - step_size;
+        for (int i = upper; i > 0; i--) {
+            if (s == i) {
+                return true;
+            }
+        }
+        for (int i = lower; i > 0; i++) {
+            if (s == i) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }
