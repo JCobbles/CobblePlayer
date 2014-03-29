@@ -56,18 +56,12 @@ public class AnalysisController implements Initializable, CollectionListener {
     @FXML
     public static LineChart<Integer, Integer> ampChart;
     private Song cobbleSong;
-    public static final XYChart.Series series = new XYChart.Series();
+    public XYChart.Series series = new XYChart.Series();
     Minim minim;
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        tabPane.setOnMousePressed(new EventHandler<MouseEvent>() {
-
-            @Override
-            public void handle(MouseEvent t) {
-//                tabPane.getSelectionModel().select(curTab);
-            }
-        });
+        series.setName("Amplitude data");
         ((TableColumn) freqTable.getColumns().get(0)).setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Item, String>, ObservableValue<String>>() {
             @Override
             public ObservableValue<String> call(TableColumn.CellDataFeatures<Item, String> p) {
@@ -143,24 +137,34 @@ public class AnalysisController implements Initializable, CollectionListener {
     }
 
     private void amplitudeAnalysis() {
-        series.setName("Amplitude data");
+
         AmplitudeCollector col = new AmplitudeCollector(new File(cobbleSong.getFilepath()));
         col.setListener(this);
         new Thread(col).start();
     }
 
     public void analyse(boolean freq, boolean amp) {
-        Util.err(cobbleSong.toString());
-        GUIController.analyserModal.setTitle("Analyser :: " + cobbleSong.toString());
-        reset();
-        songBeingAnalysed.setText(cobbleSong.toString());
-        minim = new Minim(this);
-        final AudioPlayer song = minim.loadFile("song", 512);
-        if (freq) {
-            frequencyAnalysis(song);
-        }
-        if (amp) {
-            amplitudeAnalysis();
+        if (cobbleSong != null) {
+            Util.err(cobbleSong.toString());
+            GUIController.analyserModal.setTitle("Analyser :: " + cobbleSong.toString());
+//            reset();
+//            if (!ampChart.getData().isEmpty()) {
+//                ampChart.getData().remove(0);
+//            }
+//            if (!freqTable.getItems().isEmpty()) {
+//
+//                freqTable.getItems().remove(0, freqTable.getItems().size());
+//            }
+            songBeingAnalysed.setText(cobbleSong.toString());
+            minim = new Minim(this);
+            final AudioPlayer song = minim.loadFile("song", 512);
+            if (freq) {
+                frequencyAnalysis(song);
+            }
+            if (amp) {
+                amplitudeAnalysis();
+            }
+
         }
 
     }
@@ -169,24 +173,6 @@ public class AnalysisController implements Initializable, CollectionListener {
         FrequencyCollector col = new FrequencyCollector(song);
         col.setListener(this);
         new Thread(col).start();
-    }
-
-    public void finishFreqAnalysis(List<Float> one, List<Float> two, List<Float> three, List<Float> four, List<Float> five, List<Float> six) {
-        for (int i = 0; i < one.size(); i++) {
-            freqTable.getItems().add(new Item(one.get(i), two.get(i), three.get(i),
-                    four.get(i), five.get(i), six.get(i)));
-        }
-        freqTable.getItems().add(new Item(Util.calculateAverage(one), Util.calculateAverage(two), Util.calculateAverage(three),
-                Util.calculateAverage(four), Util.calculateAverage(five), Util.calculateAverage(six)));
-        freqTable.getSelectionModel().clearAndSelect(samples);
-        freqTable.setOnMousePressed(new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent t) {
-//                freqTable.getSelectionModel().clearAndSelect(samples);
-            }
-        });
-        freqTable.scrollTo(samples);
-        tabPane.getSelectionModel().clearAndSelect(1);
     }
 
     public void give(Song song) {
@@ -207,13 +193,25 @@ public class AnalysisController implements Initializable, CollectionListener {
 
     @Override
     public void freqCollectionFinished(List<Float> one, List<Float> two, List<Float> three, List<Float> four, List<Float> five, List<Float> six) {
-        Util.err("YAY");
-        finishFreqAnalysis(one, two, three, four, five, six);
+        for (int i = 0; i < one.size(); i++) {
+            freqTable.getItems().add(new Item(one.get(i), two.get(i), three.get(i),
+                    four.get(i), five.get(i), six.get(i)));
+        }
+        freqTable.getItems().add(new Item(Util.calculateAverage(one), Util.calculateAverage(two), Util.calculateAverage(three),
+                Util.calculateAverage(four), Util.calculateAverage(five), Util.calculateAverage(six)));
+        freqTable.getSelectionModel().clearAndSelect(samples);
+
+        freqTable.scrollTo(samples);
+//        tabPane.getSelectionModel().clearAndSelect(1);
     }
 
     @Override
-    public void ampCollectionFinished(short[] amplitudes) {
-        new Thread(new AmplitudeAnalyser(amplitudes)).start();
+    public void ampCollectionFinished(short[] amplitudes, XYChart.Series s) {
+        series = s;
+        ampChart.getData().add(s);
+        ampChart.getXAxis().setLabel("Time / arbitrary units");
+        ampChart.getYAxis().setLabel("Amplitude / arbitrary units");
+//        new Thread(new AmplitudeAnalyser(amplitudes)).start();
     }
 
     public String sketchPath(String filename) { //required by minim
