@@ -44,10 +44,11 @@ public class AmplitudeAnalyser implements Runnable {
             new ModalDialog("Error", "Song is not long enought (length of mix < step size)", bs);
         } else {
             int idx = mix.length;
-            while (idx > 0) {
-                if (isWithinThresholds(mix[idx])) {
+            while (idx > 2) {
+                if (isWithinThresholds(mix[idx], mix[idx + 1])) {
                     Util.err(mix[idx] + " within thresholds");
                 }
+                idx--;
             }
         }
         /**
@@ -59,20 +60,22 @@ public class AmplitudeAnalyser implements Runnable {
          */
     }
 
-    private boolean isWithinThresholds(short s) {
-        int upper = s + step_size;
-        int lower = s - step_size;
-        for (int i = upper; i > 0; i--) {
-            if (s == i) {
+    private boolean isWithinThresholds(int first, int second) {
+        int upper = first + 5;
+        int lower = first - 5;
+        for (int i = upper; i > first; i--) {
+            Util.err(i + "==" + second);
+            if (i == second) {
                 return true;
             }
         }
-        for (int i = lower; i > 0; i++) {
-            if (s == i) {
+        Util.err("Second for loop:");
+        for (int i = lower; i < first; i++) {
+            Util.err(i + "==" + second);
+            if (i == second) {
                 return true;
             }
         }
         return false;
     }
-
 }

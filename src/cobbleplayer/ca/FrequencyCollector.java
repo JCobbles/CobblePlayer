@@ -5,14 +5,11 @@
  */
 package cobbleplayer.ca;
 
-import cobbleplayer.AnalysisController;
 import static cobbleplayer.AnalysisController.position;
 import static cobbleplayer.GUIController.samples;
 import cobbleplayer.utilities.Util;
 import ddf.minim.AudioPlayer;
-import ddf.minim.Minim;
 import ddf.minim.analysis.FFT;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,7 +39,6 @@ public class FrequencyCollector implements Runnable {
         final int songLength = song.length() / 1000;
         final int step = song.length() / (samples + 1);
         Util.err("Step: " + step + " songlength:" + songLength);
-        Util.err("freq bands: " + frequencyBands);
         final List<Float> one = new ArrayList<>();
         final List<Float> two = new ArrayList<>();
         final List<Float> three = new ArrayList<>();
@@ -64,7 +60,7 @@ public class FrequencyCollector implements Runnable {
             six.add(fft.calcAvg(60000, 100000));
         }
         song.close();
-        listener.collectionFinished(one, two, three, four, five, six);
+        listener.freqCollectionFinished(one, two, three, four, five, six);
         
         Util.err("Finished frequency collection");
     }

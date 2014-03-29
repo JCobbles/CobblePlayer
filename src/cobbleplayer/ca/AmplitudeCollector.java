@@ -1,24 +1,16 @@
 package cobbleplayer.ca;
 
-import static cobbleplayer.AnalysisController.ampChart;
-import static cobbleplayer.AnalysisController.series;
 import cobbleplayer.Main;
-import cobbleplayer.utilities.ModalDialog;
+import cobbleplayer.utilities.Notification;
 import cobbleplayer.utilities.Util;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import javafx.application.Platform;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.scene.chart.XYChart;
-import javafx.scene.control.Button;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
@@ -31,6 +23,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 public class AmplitudeCollector implements Runnable {
 
     private final File song;
+    private XYChart.Series series = new XYChart.Series();
     private CollectionListener listener;
 
     public AmplitudeCollector(File song) {
@@ -99,21 +92,10 @@ public class AmplitudeCollector implements Runnable {
                 Platform.runLater(new Runnable() {
                     @Override
                     public void run() {
-                        ampChart.getData().add(series);
-                        ampChart.getXAxis().setLabel("Time / arbitrary units");
-                        ampChart.getYAxis().setLabel("Amplitude / arbitrary units");
+                        
                         Util.err("Finished amplitude collection");
-                        Button ok = new Button("OK");
-                        ok.setOnAction(new EventHandler<ActionEvent>() {
-                            @Override
-                            public void handle(ActionEvent paramT) {
-                                ModalDialog.exit();
-                            }
-                        });
-                        List<Button> buttons = new ArrayList<>();
-                        buttons.add(ok);
-                        new ModalDialog("Finished", "Collection has finished, proceeding with analysis.", buttons, 210, 75);
-                        listener.ampCollectionFinished(mix);
+                        Notification.showPopupMessage("Collection has finished, proceeding with analysis", Main.getStage());
+                        listener.ampCollectionFinished(mix, series);
                     }
                 });
 
