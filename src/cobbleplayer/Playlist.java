@@ -64,18 +64,20 @@ public class Playlist {
 
     public void addSongUnimported(String filename) throws IOException {
         File f = new File(filename);
+        addSongUnimported(f);
+    }
+    public void addSongUnimported(File file) throws IOException {
         try {
             
-            addSong(new Song(Util.getTitle(f), Util.getArtist(f),
-                    filename, Util.getDurationAsString(f),
-                    Util.getAlbum(f), Util.getDuration(f)));
+            addSong(new Song(Util.getTitle(file), Util.getArtist(file),
+                    file.getAbsolutePath(), Util.getDurationAsString(file),
+                    Util.getAlbum(file), Util.getDuration(file)));
         } catch (TagException e) {
-            String current = f.getName();
+            String current = file.getName();
             Util.print("Error getting properties from: " + current);
             Song s = new Song(current, "-", current, "-", "-", 0);
             addSong(s);
         }
-
     }
     
     public void addSong(Song s) {

@@ -9,9 +9,23 @@ import static cobbleplayer.AnalysisController.position;
 import static cobbleplayer.GUIController.samples;
 import cobbleplayer.utilities.Util;
 import ddf.minim.AudioPlayer;
+import ddf.minim.AudioSample;
+import ddf.minim.Minim;
 import ddf.minim.analysis.FFT;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.UnsupportedAudioFileException;
 
 /**
  *
@@ -19,8 +33,10 @@ import java.util.List;
  */
 public class FrequencyCollector implements Runnable {
 
-    private AudioPlayer song;
+//    private File song;
     private CollectionListener listener;
+    private Minim minim;
+    private AudioPlayer song;
 
     public FrequencyCollector(AudioPlayer song) {
         this.song = song;
@@ -29,6 +45,57 @@ public class FrequencyCollector implements Runnable {
 
     @Override
     public void run() {
+//        if(song.exists()) {
+//            try{
+//                AudioInputStream in = AudioSystem.getAudioInputStream(song);
+//                AudioInputStream din = null;
+//                AudioFormat baseFormat = in.getFormat();
+//                AudioFormat decodedFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
+//                        baseFormat.getSampleRate(), //sample rate
+//                        16, //sample size (bits)
+//                        baseFormat.getChannels(), //channels
+//                        baseFormat.getChannels() * 2,//frame size
+//                        baseFormat.getSampleRate(), //frame rate
+//                        false);                     //bigendian?
+//                din = AudioSystem.getAudioInputStream(decodedFormat, in);
+//
+//                byte[] temp = new byte[4];
+//                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+//                DataOutputStream dos = new DataOutputStream(bos);
+//                int i = 0;
+//                while (din.read(temp, 0, 4) != -1) {
+//                    if (decodedFormat.getChannels() == 2) {
+//
+//                        dos.writeShort(((temp[1] * 256 + temp[0]) + (temp[3] * 256 + temp[2])) / 2); //average of two channels
+//                        i++;
+//                    }
+//                }
+//
+//                byte[] bytes = bos.toByteArray();
+//                ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+//                DataInputStream dis = new DataInputStream(bis);
+//                
+//               
+//            } catch(UnsupportedAudioFileException | IOException e) {
+//                
+//            }
+//            
+//        }
+//        AudioSample s = minim.loadSample (song.getAbsolutePath(), 2048); 
+//        s.trigger(); 
+//        float[] sampleLeftChannel = s.getChannel( AudioSample.LEFT );
+//
+//        
+//        
+//        
+//                final List<Float> one = new ArrayList<>();
+//        final List<Float> two = new ArrayList<>();
+//        final List<Float> three = new ArrayList<>();
+//        final List<Float> four = new ArrayList<>();
+//        final List<Float> five = new ArrayList<>();
+//        final List<Float> six = new ArrayList<>();
+
+        //old:
         final FFT fft;
 
         song.play();
@@ -51,7 +118,7 @@ public class FrequencyCollector implements Runnable {
 //                System.err.println("Mix empty");
             }
             fft.forward(song.mix);
-            position.setText("" + song.position() * 1000);
+            position.setText("" + song.position() / 1000);
             one.add(fft.calcAvg(20, 1000));
             two.add(fft.calcAvg(1000, 3000));
             three.add(fft.calcAvg(3000, 10000));
@@ -61,7 +128,7 @@ public class FrequencyCollector implements Runnable {
         }
         song.close();
         listener.freqCollectionFinished(one, two, three, four, five, six);
-        
+//        
         Util.err("Finished frequency collection");
     }
 
@@ -70,9 +137,6 @@ public class FrequencyCollector implements Runnable {
         return fft.calcAvg(20, 100000) == 0;
     }
 
-    private void addSampleList(List<Float> list) {
-        listOfSamples.add(list);
-    }
     public void setListener(CollectionListener list) {
         listener = list;
     }

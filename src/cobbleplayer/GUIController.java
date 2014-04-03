@@ -17,6 +17,8 @@
  */
 package cobbleplayer;
 
+import cobbleplayer.utilities.FileImporter;
+import cobbleplayer.utilities.ImportListener;
 import cobbleplayer.utilities.ModalDialog;
 import cobbleplayer.utilities.Util;
 import java.awt.Desktop;
@@ -66,7 +68,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
  *
  * @author Jacob Moss This also acts as main interface class
  */
-public class GUIController implements Initializable, SongListener {
+public class GUIController implements Initializable, ImportListener {
 
     @FXML
     Button pauseToggleButton, repeatButton, shuffleButton;
@@ -225,28 +227,12 @@ public class GUIController implements Initializable, SongListener {
             @Override
             public void handle(DragEvent event) {
                 final Dragboard db = event.getDragboard();
-                boolean success = false;
                 if (db.hasFiles()) {
+                    AnalysisController.active = false;
                     ModalDialog di = new ModalDialog("Importing songs", "Checking and collecting data...", null);
-                    for (File file : db.getFiles()) {
-                        if (file.isDirectory()) {
-//                                    addFilesToList(file.listFiles());
-                            File[] files = file.listFiles();
-                            int idx = files.length - 1;
-                            while (idx != -1) {
-                                addFileToList(files[idx]);
-                                di.setMessage("Add: " + files[idx]);
-                                idx--;
-                            }
-                        } else { //files
-                            addFileToList(file);
-                        }
-                    }
-                    di.close();
-                    success = true;
-
+                    new Thread(new FileImporter(activeController, db.getFiles(), di)).start();
                 }
-                event.setDropCompleted(success);
+                event.setDropCompleted(true);
                 event.consume();
             }
         });
@@ -261,7 +247,7 @@ public class GUIController implements Initializable, SongListener {
                     try {
                         musicTable.setDisable(true);
 
-                        play((Song) musicTable.getItems().get(util.rand(musicTable.getItems().size(), 0)));
+                        play((Song) musicTable.getItems().get(util.randInt(musicTable.getItems().size(), 0)));
                     } catch (Exception ignore) {
                         ignore.printStackTrace();
                     }
@@ -300,8 +286,11 @@ public class GUIController implements Initializable, SongListener {
 
                     @Override
                     public void handle(DragEvent t) {
-                        if (t.getDragboard().getString().equalsIgnoreCase("songs")) {
-                            t.acceptTransferModes(TransferMode.ANY);
+                        if (t.getDragboard().getString() != null) {
+                            if (t.getDragboard().getString().equalsIgnoreCase("songs")) {
+                                t.acceptTransferModes(TransferMode.ANY);
+                            }
+
                         }
                     }
                 });
@@ -318,24 +307,6 @@ public class GUIController implements Initializable, SongListener {
             }
         });
         playlists.getSelectionModel().select(0);
-    }
-
-    @FXML
-    private void autoAnalyse(ActionEvent v) throws InterruptedException {
-        if (musicController.getCurrent() == null) {
-            new ModalDialog("Error", "Please choose a file (double click)", null, 200, 70);
-        } else {
-            Main.aC.give(musicController.getCurrent()); //give the controller the song
-
-            EventHandler<WindowEvent> ev = new EventHandler<WindowEvent>() {
-                @Override
-                public void handle(WindowEvent t) {
-                    Main.aC.reset();
-                }
-            };
-            analyserModal = new ModalDialog(Main.analyser, ev);
-            Main.aC.analyse(true, true);
-        }
     }
 
     private void play(Song song) {
@@ -375,10 +346,10 @@ public class GUIController implements Initializable, SongListener {
 
     private void trackChange(boolean next) {
         if (musicController.getCurrent() == null) {
-            play((Song) musicTable.getItems().get(util.rand(musicTable.getItems().size(), 0)));
+            play((Song) musicTable.getItems().get(util.randInt(musicTable.getItems().size(), 0)));
         } else {
             if (shuffle) {
-                play((Song) musicTable.getItems().get(util.rand(data.size(), 0)));
+                play((Song) musicTable.getItems().get(util.randInt(data.size(), 0)));
             } else {
                 int i = (next) ? musicTable.getItems().indexOf(musicController.getCurrent()) + 1
                         : musicTable.getItems().indexOf(musicController.getCurrent()) - 1;
@@ -418,32 +389,45 @@ public class GUIController implements Initializable, SongListener {
         trackChange(true);
     }
 
-    private void addFilesToList(File[] files) {
-        int idx = files.length - 1;
-        while (idx != -1) {
-            addFileToList(files[idx]);
-            idx--;
+    @FXML
+    private void autoAnalyse(ActionEvent v) throws InterruptedException {
+        if (musicController.getCurrent() == null) {
+            new ModalDialog("Error", "Please choose a file (double click)", null, 200, 70);
+        } else {
+            Main.aC.give(musicController.getCurrent()); //give the controller the song
+
+            EventHandler<WindowEvent> ev = new EventHandler<WindowEvent>() {
+                @Override
+                public void handle(WindowEvent t) {
+                    Main.aC.reset();
+                }
+            };
+            analyserModal = new ModalDialog(Main.analyser, ev);
+            Main.aC.analyse(true, true);
         }
     }
 
-    private void addFileToList(File file) {
-        String extension = (file.getName().lastIndexOf('.') > 0)
-                ? file.getName().substring(file.getName().lastIndexOf('.') + 1) : null;
-        if (extension != null && extension.equalsIgnoreCase("mp3")) {
-            if (library != null) {
-                try {
-                    library.addSongUnimported(file.toString());
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
+    @Override
+    public void songImported(Song s, ModalDialog di) {
+        if (s != null && s.getFilepath() != null) {
+            di.setMessage("Add: " + s.getFilepath());
+            if ((playlists.getSelectionModel().getSelectedItem()) != null) {
+                ((Playlist) playlists.getSelectionModel().getSelectedItem()).addSong(s);
             } else {
-                try {
-                    ((Playlist) playlists.getSelectionModel().getSelectedItem()).addSongUnimported(file.toString());
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
+                library.addSong(s);
             }
         }
+    }
+
+    @Override
+    public void finished(final ModalDialog di) {
+        Platform.runLater(new Runnable() {
+            @Override
+            public void run() {
+                di.close();
+            }
+        });
+        AnalysisController.active = true;
     }
 
     public void updateSeeker(double value) {
@@ -643,7 +627,6 @@ public class GUIController implements Initializable, SongListener {
         setSeeker = true;
     }
 
-    @Override
     public void songEnded() {
         util.write("Song ended");
         if (repeat) {
@@ -669,4 +652,5 @@ public class GUIController implements Initializable, SongListener {
     public static void setPlaylists(List<Playlist> playlists) {
         importList = playlists;
     }
+
 }

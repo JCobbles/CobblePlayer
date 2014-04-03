@@ -7,12 +7,17 @@ package cobbleplayer.utilities;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javafx.animation.FadeTransition;
+import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.control.Label;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.StackPaneBuilder;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
+import javafx.util.Duration;
 
 /**
  *
@@ -47,6 +52,21 @@ public class Notification {
                 popup.setY(stage.getY() + stage.getHeight() / 2 - popup.getHeight() / 2);
             }
         });
+        Rectangle rect = new Rectangle(popup.getWidth(), popup.getHeight());
+        popup.getContent().add(rect);
         popup.show(stage);
+        FadeTransition ft = new FadeTransition(Duration.seconds(4), rect);
+        ft.setFromValue(1.0);
+        ft.setToValue(0.0);
+        ft.setCycleCount(1);
+        ft.setAutoReverse(false);
+        ft.play();
+        ft.setOnFinished(new EventHandler<ActionEvent>() {
+            public void handle(ActionEvent t) {
+                popup.hide();
+                Util.err("hiding");
+            }
+        });
+
     }
 }

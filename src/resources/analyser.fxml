@@ -64,6 +64,7 @@
                   <children>
                     <TableView fx:id="freqTable" prefHeight="202.0" prefWidth="600.0" VBox.vgrow="ALWAYS">
                       <columns>
+                        <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="65.0" text="Sample" />
                         <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="82.0" text="20-1000Hz" />
                         <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="98.0" text="1000-3000Hz" />
                         <TableColumn maxWidth="5000.0" minWidth="10.0" prefWidth="104.0" text="3000-15,000Hz" />

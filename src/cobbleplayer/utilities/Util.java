@@ -2,15 +2,20 @@ package cobbleplayer.utilities;
 
 import cobbleplayer.Main;
 import cobbleplayer.Song;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
@@ -45,17 +50,37 @@ public class Util {
     private static Label notifArea;
     private static MP3File file;
     public static boolean DEBUG;
+    private static PrintWriter log;
     //constants
+    public final static String ERRORLOG_FILENAME = "errorlog.cob";
     public final static String CONFIG_FILENAME = "Config.cob";
     public final static String PLAYLIST_FILENAME = "Playlists.cob";
     public final static String PLAYLIST_CODE = "59y56x712x38y";
     public final static String END_CODE = "923728fj384539kf7";
 
+    static {
+        try {
+            log = new PrintWriter(new BufferedWriter(new FileWriter(Util.ERRORLOG_FILENAME, true)));
+        } catch (IOException ex) {
+            Util.err("Error creating printwriter");
+        }
+    }
+
     public Util() {
     }
 
-    public static void log(Exception e) {
-        
+    public static void closeLog() {
+        if (log != null) {
+            log.close();
+        }
+    }
+
+    public static void log(String s) {
+        log.println(s);
+    }
+
+    private static void openLog() throws IOException {
+
     }
 
     public static void print(String message) {
@@ -63,14 +88,13 @@ public class Util {
     }
 
     public static void err(Object message) {
-        if(DEBUG) {
+        if (DEBUG) {
             System.err.println(message);
         }
-        
+
     }
 
     public static String getTitle(File input) throws TagException, IOException {
-
         file = new MP3File(input);
         if (file.hasID3v2Tag()) {
             return file.getID3v2Tag().getSongTitle();
@@ -126,21 +150,31 @@ public class Util {
             Map properties = baseFileFormat.properties();
             Long duration = (Long) properties.get("duration");
             int mili = (int) (duration / 1000);
-            int sec = (mili / 1000) % 60;
-            int min = (mili / 1000) / 60;
-            if (String.valueOf(sec).length() == 1) {
-                String time = (min + ":0" + sec);
-                return time;
-            } else {
-                String time = (min + ":" + sec);
-                return time;
-            }
+            return timeToString(mili / 1000);
 
         } catch (Exception ex) {
             err(ex.getMessage());
             ex.printStackTrace();
             return "error";
         }
+    }
+
+    public static String timeToString(float seconds) {
+        int sec = (int) (seconds % 60);
+        int min = (int) (seconds / 60);
+        if (sec > 9) {
+            String time = (min + ":" + sec);
+            return time;
+        } else {
+            String time = (min + ":0" + sec);
+            return time;
+        }
+    }
+
+    public static String timeToStringWithoutColon(float seconds) {
+        int sec = (int) (seconds % 60);
+        int min = (int) (seconds / 60);
+        return min + "" + sec;
     }
 
     public void give(Label notifArea) {
@@ -210,7 +244,7 @@ public class Util {
      * @param low the lower boundary
      * @return a List<Integer> of random numbers within the boundaries
      */
-    public List<Integer> generateRand(int high, int low) {
+    public List<Integer> randIntList(int high, int low) {
         int idx = 0;
         List<Integer> s = new ArrayList<Integer>();
         while (high != idx) {
@@ -220,7 +254,7 @@ public class Util {
         return s;
     }
 
-    public int rand(int high, int low) {
+    public int randInt(int high, int low) {
         return r.nextInt(high - low) + low;
     }
 

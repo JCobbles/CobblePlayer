@@ -1,7 +1,19 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * Copyright (C) 2014 Jacob Moss
+ *
+ * This program is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program. If not, see <http://www.gnu.org/licenses/>
+ *
  */
 package cobbleplayer;
 
@@ -17,8 +29,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -130,12 +140,12 @@ public class Main extends Application {
 //            GUIController.importFiles(songList);
             scene = new Scene((AnchorPane) load.load());
             primaryStage.setScene(scene);
-            Screen screen = Screen.getPrimary();
-            Rectangle2D bounds = screen.getVisualBounds();
-            primaryStage.setX(bounds.getMinX());
-            primaryStage.setY(bounds.getMinY());
-            primaryStage.setWidth(bounds.getWidth());
-            primaryStage.setHeight(bounds.getHeight());
+//            Screen screen = Screen.getPrimary();
+//            Rectangle2D bounds = screen.getVisualBounds();
+//            primaryStage.setX(bounds.getMinX());
+//            primaryStage.setY(bounds.getMinY());
+//            primaryStage.setWidth(bounds.getWidth());
+//            primaryStage.setHeight(bounds.getHeight());
 
             primaryStage.setTitle(APP_TITLE);
             primaryStage.show();
@@ -196,7 +206,7 @@ public class Main extends Application {
 
     public static void endClose() {
         saveConfig();
-
+        Util.closeLog();
         System.exit(0);
     }
 

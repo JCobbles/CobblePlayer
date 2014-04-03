@@ -13,6 +13,7 @@ import cobbleplayer.Main;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Group;
@@ -37,6 +38,7 @@ public class ModalDialog extends Stage {
     Group group;
 
     public ModalDialog(String title, String message, List<Button> buttons) {
+        width = message.length() * 20;
         init(title, message, buttons);
     }
 
@@ -93,8 +95,13 @@ public class ModalDialog extends Stage {
         stage.show();
     }
 
-    public void setMessage(String message) {
-        ((Label) group.getChildren().get(0)).setText(message);
+    public void setMessage(final String message) {
+        Platform.runLater(new Runnable() {
+            @Override
+            public void run() {
+                ((Label) group.getChildren().get(0)).setText(message);
+            }
+        });
     }
 
     public static void exit() {

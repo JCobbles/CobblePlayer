@@ -19,9 +19,6 @@ public class Song {
         seconds = sec;
     }
 
-    /**
-     * @return path of the mp3
-     */
     public String getFilepath() {
         return filepath;
     }

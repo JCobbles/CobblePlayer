@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
+import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
@@ -55,6 +56,7 @@ public class AnalysisController implements Initializable, CollectionListener {
     CheckBox checkFreq, checkRhythm;
     @FXML
     public static LineChart<Integer, Integer> ampChart;
+    public static boolean active = true;
     private Song cobbleSong;
     public XYChart.Series series = new XYChart.Series();
     Minim minim;
@@ -65,34 +67,40 @@ public class AnalysisController implements Initializable, CollectionListener {
         ((TableColumn) freqTable.getColumns().get(0)).setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Item, String>, ObservableValue<String>>() {
             @Override
             public ObservableValue<String> call(TableColumn.CellDataFeatures<Item, String> p) {
-                return new ReadOnlyObjectWrapper(p.getValue().one);
+                return new ReadOnlyObjectWrapper(p.getValue().sample);
             }
         });
         ((TableColumn) freqTable.getColumns().get(1)).setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Item, String>, ObservableValue<String>>() {
             @Override
             public ObservableValue<String> call(TableColumn.CellDataFeatures<Item, String> p) {
-                return new ReadOnlyObjectWrapper(p.getValue().two);
+                return new ReadOnlyObjectWrapper(p.getValue().one);
             }
         });
         ((TableColumn) freqTable.getColumns().get(2)).setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Item, String>, ObservableValue<String>>() {
             @Override
             public ObservableValue<String> call(TableColumn.CellDataFeatures<Item, String> p) {
-                return new ReadOnlyObjectWrapper(p.getValue().three);
+                return new ReadOnlyObjectWrapper(p.getValue().two);
             }
         });
         ((TableColumn) freqTable.getColumns().get(3)).setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Item, String>, ObservableValue<String>>() {
             @Override
             public ObservableValue<String> call(TableColumn.CellDataFeatures<Item, String> p) {
-                return new ReadOnlyObjectWrapper(p.getValue().four);
+                return new ReadOnlyObjectWrapper(p.getValue().three);
             }
         });
         ((TableColumn) freqTable.getColumns().get(4)).setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Item, String>, ObservableValue<String>>() {
             @Override
             public ObservableValue<String> call(TableColumn.CellDataFeatures<Item, String> p) {
-                return new ReadOnlyObjectWrapper(p.getValue().five);
+                return new ReadOnlyObjectWrapper(p.getValue().four);
             }
         });
         ((TableColumn) freqTable.getColumns().get(5)).setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Item, String>, ObservableValue<String>>() {
+            @Override
+            public ObservableValue<String> call(TableColumn.CellDataFeatures<Item, String> p) {
+                return new ReadOnlyObjectWrapper(p.getValue().five);
+            }
+        });
+        ((TableColumn) freqTable.getColumns().get(6)).setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Item, String>, ObservableValue<String>>() {
             @Override
             public ObservableValue<String> call(TableColumn.CellDataFeatures<Item, String> p) {
                 return new ReadOnlyObjectWrapper(p.getValue().six);
@@ -109,10 +117,13 @@ public class AnalysisController implements Initializable, CollectionListener {
                     @Override
                     protected void updateItem(Song item, boolean empty) {
                         super.updateItem(item, empty);
-                        if (item == null || empty) {
-                        } else {
-                            setText(item.toString() + ", " + item.getArtist());
+                        if (active) {
+                            if (item == null || empty) {
+                            } else {
+                                setText(item.toString() + ", " + item.getArtist());
+                            }
                         }
+
                     }
                 };
                 return sc;
@@ -148,16 +159,10 @@ public class AnalysisController implements Initializable, CollectionListener {
             Util.err(cobbleSong.toString());
             GUIController.analyserModal.setTitle("Analyser :: " + cobbleSong.toString());
 //            reset();
-//            if (!ampChart.getData().isEmpty()) {
-//                ampChart.getData().remove(0);
-//            }
-//            if (!freqTable.getItems().isEmpty()) {
-//
-//                freqTable.getItems().remove(0, freqTable.getItems().size());
-//            }
             songBeingAnalysed.setText(cobbleSong.toString());
             minim = new Minim(this);
             final AudioPlayer song = minim.loadFile("song", 512);
+            Util.err(song.bufferSize());
             if (freq) {
                 frequencyAnalysis(song);
             }
@@ -169,8 +174,9 @@ public class AnalysisController implements Initializable, CollectionListener {
 
     }
 
-    private void frequencyAnalysis(final AudioPlayer song) {
-        FrequencyCollector col = new FrequencyCollector(song);
+    private void frequencyAnalysis(AudioPlayer minim) {
+//        FrequencyCollector col = new FrequencyCollector(new File(cobbleSong.getFilepath()), minim);
+        FrequencyCollector col = new FrequencyCollector(minim);
         col.setListener(this);
         new Thread(col).start();
     }
@@ -181,35 +187,41 @@ public class AnalysisController implements Initializable, CollectionListener {
     }
 
     public void reset() {
-
-        series.getData().remove(0, series.getData().size());
-        ampChart.getData().remove(series);
-
-//        ObservableList<Item> dataaa = FXCollections.observableArrayList();
-//        freqTable.setItems(dataaa);
-        freqTable.getItems().remove(0, freqTable.getItems().size());
-
+        if (ampChart.getData().size() > 0) {
+            ampChart.getData().remove(0);
+        }
+        if (freqTable.getItems().size() > 0) {
+            freqTable.getItems().remove(0, freqTable.getItems().size());
+        }
     }
 
     @Override
     public void freqCollectionFinished(List<Float> one, List<Float> two, List<Float> three, List<Float> four, List<Float> five, List<Float> six) {
+        if (freqTable.getItems().size() > 0) {
+            freqTable.getItems().remove(0, freqTable.getItems().size());
+        }
         for (int i = 0; i < one.size(); i++) {
-            freqTable.getItems().add(new Item(one.get(i), two.get(i), three.get(i),
+            freqTable.getItems().add(new Item(i + 1 + "", one.get(i), two.get(i), three.get(i),
                     four.get(i), five.get(i), six.get(i)));
         }
-        freqTable.getItems().add(new Item(Util.calculateAverage(one), Util.calculateAverage(two), Util.calculateAverage(three),
+        freqTable.getItems().add(new Item("Average:", Util.calculateAverage(one), Util.calculateAverage(two), Util.calculateAverage(three),
                 Util.calculateAverage(four), Util.calculateAverage(five), Util.calculateAverage(six)));
+
         freqTable.getSelectionModel().clearAndSelect(samples);
 
-        freqTable.scrollTo(samples);
+//        freqTable.scrollTo(samples);
 //        tabPane.getSelectionModel().clearAndSelect(1);
     }
 
     @Override
     public void ampCollectionFinished(short[] amplitudes, XYChart.Series s) {
+        if (ampChart.getData().size() > 0) {
+            ampChart.getData().remove(0);
+        }
+
         series = s;
-        ampChart.getData().add(s);
-        ampChart.getXAxis().setLabel("Time / arbitrary units");
+        ampChart.getData().add(series);
+        ampChart.getXAxis().setLabel("Time / seconds");
         ampChart.getYAxis().setLabel("Amplitude / arbitrary units");
 //        new Thread(new AmplitudeAnalyser(amplitudes)).start();
     }
@@ -230,8 +242,10 @@ public class AnalysisController implements Initializable, CollectionListener {
     public class Item {
 
         public float one, two, three, four, five, six;
+        public String sample;
 
-        public Item(float one, float two, float three, float four, float five, float six) {
+        public Item(String sample, float one, float two, float three, float four, float five, float six) {
+            this.sample = sample;
             this.one = one;
             this.two = two;
             this.three = three;

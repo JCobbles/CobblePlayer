@@ -277,9 +277,13 @@
         <Menu mnemonicParsing="false" text="File">
           <items>
             <MenuItem mnemonicParsing="false" onAction="#actionSettings" text="Settings" fx:id="settings" />
-            <MenuItem mnemonicParsing="false" onAction="#actionNewPlaylist" text="New playlist" fx:id="newPlaylistItem" />
             <MenuItem mnemonicParsing="false" onAction="#actionAnalyser" text="Music analyser" />
             <MenuItem mnemonicParsing="false" onAction="#actionClose" text="Close" fx:id="close" />
+          </items>
+        </Menu>
+        <Menu mnemonicParsing="false" text="Playlists">
+          <items>
+            <MenuItem mnemonicParsing="false" onAction="#actionAnalyser" text="New playlist" />
           </items>
         </Menu>
         <Menu mnemonicParsing="false" text="Help/report bug">

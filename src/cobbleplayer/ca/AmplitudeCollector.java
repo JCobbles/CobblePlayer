@@ -51,48 +51,48 @@ public class AmplitudeCollector implements Runnable {
                 DataOutputStream dos = new DataOutputStream(bos);
                 int i = 0;
                 while (din.read(temp, 0, 4) != -1) {
-                    if (decodedFormat.getChannels() == 2) {
 
-                        dos.writeShort(((temp[1] * 256 + temp[0]) + (temp[3] * 256 + temp[2])) / 2); //average of two channels
-                        i++;
-                    }
+                    dos.writeShort(((temp[1] * 256 + temp[0]) + (temp[3] * 256 + temp[2])) / 2); //average of two channels
+                    i++;
+
                 }
 
                 byte[] bytes = bos.toByteArray();
                 ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
                 DataInputStream dis = new DataInputStream(bis);
-                final short[] mix = new short[(bytes.length / 2)];
 
-                int len = 0;
-                int offset = 0, skip = mix.length / (int) Main.analyser.getWidth();
-                
+                int len = 0, index = 0;
+                int offset = 0, skip = (bytes.length / 2) / (int) Main.analyser.getWidth();
+                final short[] mix = new short[((bytes.length / 2) / skip)];
+                int disLength = bytes.length / 2;
+                float xInterval = (float) Util.getDuration(song) / (float) mix.length;
+                float add = xInterval;
+                Util.err(Util.getDuration(song) + "/" + mix.length);
+                Util.err(xInterval);
                 while (1 > 0) {
                     while (offset < skip) {
                         offset += dis.skip(skip - offset);
                     }
                     len += skip;
                     offset = 0;
+                    xInterval += add;
                     try {
-                        mix[len] = dis.readShort();
+                        mix[index] = dis.readShort();
                     } catch (ArrayIndexOutOfBoundsException e) { //end of stream
                         Util.err("End of stream");
                         break;
                     }
 
-                    final int templen = len;
-                    Platform.runLater(new Runnable() {
-                        @Override
-                        public void run() {
-                            series.getData().add(new XYChart.Data(templen, mix[templen]));
-                        }
-                    });
+                    series.getData().add(new XYChart.Data(xInterval, mix[index]));
+                    index++;
                 }
 
-                Util.err(len - skip + "  ==  " + bytes.length / 2 + " == " + i);
+                Util.err(disLength + " == " + i);
+                Util.err(index + "  ==  " + mix.length);
                 Platform.runLater(new Runnable() {
                     @Override
                     public void run() {
-                        
+
                         Util.err("Finished amplitude collection");
                         Notification.showPopupMessage("Collection has finished, proceeding with analysis", Main.getStage());
                         listener.ampCollectionFinished(mix, series);
