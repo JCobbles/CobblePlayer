@@ -5,6 +5,7 @@ import cobbleplayer.ca.AmplitudeAnalyser;
 import cobbleplayer.ca.AmplitudeCollector;
 import cobbleplayer.ca.CollectionListener;
 import cobbleplayer.ca.FrequencyCollector;
+import cobbleplayer.utilities.Notification;
 import cobbleplayer.utilities.Util;
 import ddf.minim.AudioPlayer;
 import ddf.minim.Minim;
@@ -12,6 +13,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -151,7 +153,9 @@ public class AnalysisController implements Initializable, CollectionListener {
 
         AmplitudeCollector col = new AmplitudeCollector(new File(cobbleSong.getFilepath()));
         col.setListener(this);
-        new Thread(col).start();
+        Thread colT = new Thread(col);
+        colT.setName("Amplitude-collector");
+        colT.start();
     }
 
     public void analyse(boolean freq, boolean amp) {
@@ -178,7 +182,9 @@ public class AnalysisController implements Initializable, CollectionListener {
 //        FrequencyCollector col = new FrequencyCollector(new File(cobbleSong.getFilepath()), minim);
         FrequencyCollector col = new FrequencyCollector(minim);
         col.setListener(this);
-        new Thread(col).start();
+        Thread colT =  new Thread(col);
+        colT.setName("Frequency-collector");
+        colT.start();
     }
 
     public void give(Song song) {
@@ -215,14 +221,27 @@ public class AnalysisController implements Initializable, CollectionListener {
 
     @Override
     public void ampCollectionFinished(short[] amplitudes, XYChart.Series s) {
+        Util.err("Finished amplitude collection");
+        Platform.runLater(new Runnable() {
+            @Override
+            public void run() {
+                Notification.showPopupMessage("Collection has finished, proceeding with analysis", Main.getStage());
+            }
+        });
+
         if (ampChart.getData().size() > 0) {
             ampChart.getData().remove(0);
         }
 
         series = s;
-        ampChart.getData().add(series);
-        ampChart.getXAxis().setLabel("Time / seconds");
-        ampChart.getYAxis().setLabel("Amplitude / arbitrary units");
+//        Platform.runLater(new Runnable() {
+//            @Override
+//            public void run() {
+                ampChart.getData().add(series);
+                ampChart.getXAxis().setLabel("Time / seconds");
+                ampChart.getYAxis().setLabel("Amplitude / arbitrary units");
+//            }
+//        });
 //        new Thread(new AmplitudeAnalyser(amplitudes)).start();
     }
 

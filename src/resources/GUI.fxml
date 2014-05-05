@@ -3,6 +3,7 @@
 <?import java.lang.*?>
 <?import java.net.*?>
 <?import java.util.*?>
+<?import javafx.collections.*?>
 <?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.image.*?>
@@ -14,10 +15,10 @@
   <children>
     <ImageView fitHeight="39.99999237060547" fitWidth="246.39996353275" pickOnBounds="true" preserveRatio="true" AnchorPane.rightAnchor="-3.6" AnchorPane.topAnchor="0.0">
       <image>
-        <Image url="file:/C:/Users/Jacob/Dropbox/Programming/Java/CobblePlayer/src/resources/logo.png" />
+        <Image url="@logo.png" />
       </image>
     </ImageView>
-    <SplitPane dividerPositions="0.1773399547978909" focusTraversable="true" prefHeight="525.0" prefWidth="772.0" AnchorPane.bottomAnchor="14.0" AnchorPane.leftAnchor="14.0" AnchorPane.rightAnchor="14.0" AnchorPane.topAnchor="61.0">
+    <SplitPane fx:id="mainSplitPane" disable="false" dividerPositions="0.1773399547978909" focusTraversable="true" prefHeight="525.0" prefWidth="772.0" AnchorPane.bottomAnchor="14.0" AnchorPane.leftAnchor="14.0" AnchorPane.rightAnchor="14.0" AnchorPane.topAnchor="61.0">
       <items>
         <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
           <children>
@@ -76,7 +77,7 @@
           <children>
             <VBox id="VBox" alignment="CENTER" spacing="5.0" AnchorPane.bottomAnchor="-5.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="-1.0" AnchorPane.topAnchor="0.0">
               <children>
-                <SplitPane dividerPositions="0.5" focusTraversable="true" orientation="VERTICAL" prefHeight="522.9999000000025" prefWidth="614.0" VBox.vgrow="ALWAYS">
+                <SplitPane dividerPositions="0.6580882352941176" focusTraversable="true" orientation="VERTICAL" prefHeight="522.9999000000025" prefWidth="614.0" VBox.vgrow="ALWAYS">
                   <items>
                     <AnchorPane fx:id="tableArea" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
                       <children>
@@ -89,9 +90,9 @@
                           <content>
                             <AnchorPane id="Content" minHeight="0.0" minWidth="0.0" prefHeight="290.0" prefWidth="609.0">
                               <children>
-                                <AnchorPane id="AnchorPane" prefHeight="242.0" prefWidth="342.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="289.0" AnchorPane.topAnchor="0.0">
+                                <AnchorPane id="AnchorPane" prefHeight="242.0" prefWidth="660.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                                   <children>
-                                    <HBox id="HBox" alignment="CENTER" layoutX="101.0" layoutY="26.0" spacing="5.0">
+                                    <HBox id="HBox" alignment="CENTER" layoutX="180.0" layoutY="27.0" spacing="5.0">
                                       <children>
                                         <Button id="prevButton" fx:id="previousButton" mnemonicParsing="false" onAction="#actionPrev" text="">
                                           <graphic>
@@ -122,44 +123,39 @@
                                         </Button>
                                       </children>
                                     </HBox>
-                                    <StackPane id="StackPane" layoutX="24.0" layoutY="63.0">
+                                    <StackPane id="StackPane" layoutX="99.0" layoutY="63.0">
                                       <children>
                                         <ProgressBar fx:id="seeker" disable="false" prefWidth="294.0" progress="0.0" />
-                                        <Slider fx:id="seek" onMousePressed="#sliderMouseEnter" onMouseReleased="#sliderMouseExit" prefWidth="294.0" style="" styleClass="track">
+                                        <Slider id="seek" fx:id="seekSlider" onMousePressed="#sliderMouseEnter" onMouseReleased="#sliderMouseExit" prefWidth="294.0" style="" styleClass="track">
                                           <stylesheets>
                                             <URL value="@cobble.css" />
                                           </stylesheets>
                                         </Slider>
                                       </children>
                                     </StackPane>
-                                    <Slider fx:id="volSlider" layoutX="323.0" layoutY="95.0" orientation="VERTICAL" prefHeight="101.0" />
-                                    <Label layoutX="162.0" layoutY="87.0" text="Seek" />
-                                    <Label layoutX="295.0" layoutY="126.0" rotate="270.0" text="Volume" />
-                                    <Label fx:id="t1" layoutX="0.0" layoutY="68.0" text="0:00" />
-                                    <Label id="t2" fx:id="endTime" layoutX="320.0" layoutY="68.0" text="0:00" />
-                                    <Group id="Group" layoutX="24.0" layoutY="133.0">
+                                    <Slider fx:id="volSlider" layoutX="21.0" layoutY="37.0" orientation="VERTICAL" prefHeight="101.0" />
+                                    <Label layoutX="243.0" layoutY="84.0" text="Seek" />
+                                    <Label layoutX="-7.0" layoutY="78.0" rotate="270.0" text="Volume" />
+                                    <Label fx:id="t1" layoutX="71.0" layoutY="66.0" text="0:00" />
+                                    <Label id="t2" fx:id="endTime" layoutX="400.0" layoutY="66.0" text="0:00" />
+                                    <Group id="Group" layoutX="253.0" layoutY="104.0">
                                       <children>
                                         <Slider fx:id="balanceSlider" layoutX="0.0" layoutY="21.0" max="1.0" min="-1.0" />
                                         <Label layoutX="50.0" layoutY="0.0" text="Balance" />
-                                        <Button layoutX="140.0" layoutY="18.0" mnemonicParsing="false" onAction="#actionResetBalance" text="Reset" />
+                                        <Button layoutX="95.0" layoutY="-1.0" mnemonicParsing="false" onAction="#actionResetBalance" text="Reset" />
                                       </children>
                                     </Group>
-                                    <Group id="Group" layoutX="0.0" layoutY="172.0">
+                                    <Group id="Group" layoutX="53.0" layoutY="106.0">
                                       <children>
                                         <Slider fx:id="rateSlider" layoutX="0.0" layoutY="19.0" max="8.0" prefWidth="200.0" value="1.0" />
                                         <Label layoutX="82.0" layoutY="0.0" text="Rate" />
-                                        <Button layoutX="205.0" layoutY="17.0" mnemonicParsing="false" onAction="#actionResetRate" text="Reset" />
+                                        <Button layoutX="109.0" layoutY="-1.0" mnemonicParsing="false" onAction="#actionResetRate" text="Reset" />
                                       </children>
                                     </Group>
-                                    <Button layoutX="270.0" layoutY="200.0" mnemonicParsing="false" onAction="#actionQuickfix" text="Quick fix">
-                                      <tooltip>
-                                        <Tooltip text="Stops playing, tries to end threads and re-enables all disabled components. If this doesn't work, restart the app." />
-                                      </tooltip>
-                                    </Button>
-                                    <HBox id="HBox" alignment="CENTER" layoutX="-1.0" layoutY="0.0" prefWidth="167.0" spacing="5.0">
+                                    <HBox id="HBox" alignment="CENTER" layoutX="0.0" layoutY="0.0" prefWidth="167.0" spacing="5.0">
                                       <children>
                                         <Label prefWidth="34.5999755859375" text="Title:" />
-                                        <TextField fx:id="titleField" alignment="CENTER" disable="true" editable="false" opacity="0.75" prefWidth="137.0" HBox.hgrow="ALWAYS" />
+                                        <Button fx:id="titleField" mnemonicParsing="false" onAction="#actionJumpToCurrent" prefWidth="139.0" text="" HBox.hgrow="ALWAYS" />
                                       </children>
                                     </HBox>
                                     <HBox layoutX="174.0" layoutY="1.0" prefHeight="21.0" prefWidth="169.0">
@@ -168,16 +164,16 @@
                                         <TextField fx:id="artistField" alignment="CENTER" disable="true" editable="true" opacity="0.75" prefWidth="131.0" HBox.hgrow="ALWAYS" />
                                       </children>
                                     </HBox>
-                                    <Button id="shuffleBox" fx:id="shuffleButton" layoutX="23.0" layoutY="97.0" minHeight="24.0" minWidth="38.0" mnemonicParsing="false" onAction="#actionShuffleToggle" prefHeight="24.0" prefWidth="38.0" text="">
+                                    <Button id="shuffleBox" fx:id="shuffleButton" layoutX="128.0" layoutY="30.0" minHeight="24.0" minWidth="38.0" mnemonicParsing="false" onAction="#actionShuffleToggle" prefHeight="24.0" prefWidth="38.0" text="">
                                       <graphic>
-                                        <ImageView fitHeight="20.999893188476562" fitWidth="29.399848445139725" pickOnBounds="true" preserveRatio="true">
+                                        <ImageView fitHeight="20.999982833862305" fitWidth="29.39997526645398" pickOnBounds="true" preserveRatio="true">
                                           <image>
                                             <Image url="@shuffle.png" />
                                           </image>
                                         </ImageView>
                                       </graphic>
                                     </Button>
-                                    <Button id="shuffleBox" fx:id="repeatButton" layoutX="270.0" layoutY="99.0" minHeight="24.0" minWidth="38.0" mnemonicParsing="false" onAction="#actionRepeatToggle" prefHeight="24.0" prefWidth="38.0" text="">
+                                    <Button id="shuffleBox" fx:id="repeatButton" layoutX="343.0" layoutY="30.0" minHeight="24.0" minWidth="38.0" mnemonicParsing="false" onAction="#actionRepeatToggle" prefHeight="24.0" prefWidth="38.0" text="">
                                       <graphic>
                                         <ImageView fitHeight="25.0" fitWidth="33.33333333333333" pickOnBounds="true" preserveRatio="true">
                                           <image>
@@ -186,73 +182,46 @@
                                         </ImageView>
                                       </graphic>
                                     </Button>
-                                  </children>
-                                </AnchorPane>
-                                <AnchorPane prefHeight="224.0" prefWidth="264.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="344.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-                                  <children>
-                                    <SplitPane disable="false" dividerPositions="0.7166666666666667" focusTraversable="true" orientation="VERTICAL" prefHeight="230.0" prefWidth="264.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-                                      <items>
-                                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
-                                          <children>
-                                            <TitledPane animated="false" collapsible="false" contentDisplay="LEFT" prefHeight="108.0" prefWidth="262.0" text="Song info" textOverrun="ELLIPSIS" underline="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-                                              <content>
-                                                <AnchorPane id="Content" fx:id="songInfoPane" minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
-                                                  <children>
-                                                    <VBox id="VBox" alignment="CENTER" layoutX="0.0" layoutY="0.0" spacing="5.0">
-                                                      <children>
-                                                        <HBox minWidth="20.0" prefHeight="20.42" prefWidth="258.0">
-                                                          <children>
-                                                            <Label minWidth="-Infinity" prefWidth="48.599853515625" text="Album:" />
-                                                            <TextField fx:id="albumField" alignment="CENTER" disable="true" editable="true" prefWidth="210.0" HBox.hgrow="ALWAYS" />
-                                                          </children>
-                                                        </HBox>
-                                                        <HBox minHeight="20.0" prefHeight="20.42" prefWidth="258.0">
-                                                          <children>
-                                                            <Label prefWidth="34.5999755859375" text="Time:" />
-                                                            <TextField id="albumField" fx:id="durField" alignment="CENTER" disable="true" editable="true" prefWidth="59.0" text="" HBox.hgrow="ALWAYS" />
-                                                            <Label prefWidth="56.0" text="Channel:" />
-                                                            <TextField id="albumField" fx:id="channelsArea" alignment="CENTER" disable="true" editable="true" prefWidth="93.0" text="" HBox.hgrow="ALWAYS" />
-                                                          </children>
-                                                        </HBox>
-                                                        <HBox prefHeight="20.42" prefWidth="258.0">
-                                                          <children>
-                                                            <Label prefWidth="56.0" text="Encoding:" />
-                                                            <TextField id="albumField" fx:id="encodingArea" alignment="CENTER" disable="true" editable="true" prefWidth="210.0" text="" HBox.hgrow="ALWAYS" />
-                                                          </children>
-                                                        </HBox>
-                                                        <HBox prefHeight="20.42" prefWidth="258.0">
-                                                          <children>
-                                                            <Label prefWidth="48.5999755859375" text="Genre:" HBox.hgrow="ALWAYS" />
-                                                            <TextField id="sampleRateArea" fx:id="genreArea" alignment="CENTER" disable="true" editable="true" opacity="0.4" prefWidth="112.0" HBox.hgrow="ALWAYS" />
-                                                            <Button mnemonicParsing="false" onAction="#autoAnalyse" text="Auto analyse!" />
-                                                          </children>
-                                                        </HBox>
-                                                        <HBox id="HBox" alignment="BASELINE_LEFT" disable="false" spacing="5.0" VBox.vgrow="ALWAYS">
-                                                          <children>
-                                                            <Button cancelButton="false" defaultButton="true" disable="false" mnemonicParsing="false" text="Commit" underline="false" />
-                                                            <Region prefHeight="17.0" prefWidth="109.0" />
-                                                            <CheckBox fx:id="editBox" mnemonicParsing="false" onAction="#actionEditCheckbox" selected="false" text="Edit" />
-                                                          </children>
-                                                        </HBox>
-                                                      </children>
-                                                    </VBox>
-                                                  </children>
-                                                </AnchorPane>
-                                              </content>
-                                            </TitledPane>
-                                          </children>
-                                        </AnchorPane>
-                                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
-                                          <children>
-                                            <VBox id="VBox" alignment="CENTER" prefHeight="58.0" spacing="5.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-                                              <children>
-                                                <Label text="" />
-                                              </children>
-                                            </VBox>
-                                          </children>
-                                        </AnchorPane>
-                                      </items>
-                                    </SplitPane>
+                                    <HBox layoutX="399.0" layoutY="2.0" minWidth="20.0" prefHeight="20.42" prefWidth="258.0">
+                                      <children>
+                                        <Label minWidth="-Infinity" prefWidth="48.599853515625" text="Album:" />
+                                        <TextField fx:id="albumField" alignment="CENTER" disable="true" editable="true" prefWidth="210.0" HBox.hgrow="ALWAYS" />
+                                      </children>
+                                    </HBox>
+                                    <HBox layoutX="398.0" layoutY="26.0" prefHeight="20.42" prefWidth="258.0">
+                                      <children>
+                                        <Label prefWidth="48.5999755859375" text="Genre:" HBox.hgrow="ALWAYS" />
+                                        <TextField id="sampleRateArea" fx:id="genreArea" alignment="CENTER" disable="true" editable="true" opacity="0.4" prefWidth="112.0" HBox.hgrow="ALWAYS" />
+                                        <Button mnemonicParsing="false" onAction="#autoAnalyse" text="Auto analyse!" />
+                                      </children>
+                                    </HBox>
+                                    <HBox layoutX="436.0" layoutY="65.0" minHeight="20.0" prefHeight="21.0" prefWidth="214.0">
+                                      <children>
+                                        <ComboBox fx:id="moreInfo" prefWidth="92.0001220703125">
+                                          <items>
+                                            <FXCollections fx:factory="observableArrayList">
+                                              <String fx:value="Item 1" />
+                                              <String fx:value="Item 2" />
+                                              <String fx:value="Item 3" />
+                                            </FXCollections>
+                                          </items>
+                                        </ComboBox>
+                                        <TextField id="albumField" fx:id="comboField" alignment="CENTER" disable="true" editable="true" prefWidth="93.0" text="" HBox.hgrow="ALWAYS" />
+                                      </children>
+                                    </HBox>
+                                    <VBox id="VBox" alignment="CENTER" layoutX="428.0" layoutY="191.0" spacing="5.0" />
+                                    <HBox id="HBox" alignment="BASELINE_LEFT" disable="false" layoutX="406.0" layoutY="108.0" spacing="5.0">
+                                      <children>
+                                        <Button mnemonicParsing="false" onAction="#actionQuickfix" text="Quick fix">
+                                          <tooltip>
+                                            <Tooltip text="Stops playing, tries to end threads and re-enables all disabled components. If this doesn't work, restart the app." />
+                                          </tooltip>
+                                        </Button>
+                                        <Region prefHeight="16.0" prefWidth="56.0" />
+                                        <Button cancelButton="false" defaultButton="true" disable="false" mnemonicParsing="false" text="Commit" underline="false" />
+                                        <CheckBox fx:id="editBox" mnemonicParsing="false" onAction="#actionEditCheckbox" selected="false" text="Edit" />
+                                      </children>
+                                    </HBox>
                                   </children>
                                 </AnchorPane>
                               </children>
@@ -283,7 +252,7 @@
         </Menu>
         <Menu mnemonicParsing="false" text="Playlists">
           <items>
-            <MenuItem mnemonicParsing="false" onAction="#actionAnalyser" text="New playlist" />
+            <MenuItem mnemonicParsing="false" onAction="#actionNewPlaylist" text="New playlist" />
           </items>
         </Menu>
         <Menu mnemonicParsing="false" text="Help/report bug">
@@ -294,6 +263,8 @@
         </Menu>
       </menus>
     </MenuBar>
-    <Label fx:id="notifArea" layoutX="177.0" layoutY="40.0" prefHeight="21.0" prefWidth="393.0" text="" />
+    <Label fx:id="notifArea" layoutX="16.0" layoutY="41.0" prefHeight="21.0" prefWidth="393.0" text="" />
+    <Label layoutX="440.0" layoutY="44.0" text="Items:" />
+    <Label fx:id="items" layoutX="479.0" layoutY="44.0" prefWidth="32.0" text="" />
   </children>
 </AnchorPane>

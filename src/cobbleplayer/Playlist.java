@@ -1,6 +1,19 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * Copyright (C) 2014 Jacob Moss
+ *
+ * This program is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program. If not, see <http://www.gnu.org/licenses/>
+ *
  */
 package cobbleplayer;
 
@@ -54,6 +67,12 @@ public class Playlist {
         }
     }
 
+    public void removeAll(ObservableList<Song> songsToRemove) {
+        if (songs != null) {
+            songs.removeAll(songsToRemove);
+        }
+    }
+
     public void setName(String newName) {
         this.name = newName;
     }
@@ -66,9 +85,10 @@ public class Playlist {
         File f = new File(filename);
         addSongUnimported(f);
     }
+
     public void addSongUnimported(File file) throws IOException {
         try {
-            
+
             addSong(new Song(Util.getTitle(file), Util.getArtist(file),
                     file.getAbsolutePath(), Util.getDurationAsString(file),
                     Util.getAlbum(file), Util.getDuration(file)));
@@ -79,10 +99,17 @@ public class Playlist {
             addSong(s);
         }
     }
-    
+
     public void addSong(Song s) {
 //        System.err.println(s.toString());
-        songs.add(s);
+        try {
+            if (songs != null && s != null) {
+            songs.add(s);
+        }
+        } catch (NullPointerException e) {
+            Util.log(e.getLocalizedMessage());
+        }
+        
     }
 
     @Override

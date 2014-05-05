@@ -1,3 +1,20 @@
+/**
+ * Copyright (C) 2014 Jacob Moss
+ *
+ * This program is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program. If not, see <http://www.gnu.org/licenses/>
+ *
+ */
 package cobbleplayer.utilities;
 
 import cobbleplayer.Main;
@@ -14,8 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
@@ -74,13 +89,12 @@ public class Util {
             log.close();
         }
     }
-
+    /**
+     * Prints the message to error file
+     * @param s the string to print
+     */
     public static void log(String s) {
         log.println(s);
-    }
-
-    private static void openLog() throws IOException {
-
     }
 
     public static void print(String message) {
@@ -95,37 +109,40 @@ public class Util {
     }
 
     public static String getTitle(File input) throws TagException, IOException {
+        if (!input.exists()) {
+            log("!input.exists()" + input.getAbsolutePath());
+        }
         file = new MP3File(input);
-        if (file.hasID3v2Tag()) {
-            return file.getID3v2Tag().getSongTitle();
-        } else if (file.hasID3v1Tag()) {
-            return file.getID3v1Tag().getSongTitle();
+        if (file.hasID3v2Tag() && !file.getID3v2Tag().getSongTitle().isEmpty()) {
+            return file.getID3v2Tag().getSongTitle().replaceAll("[^A-Za-z0-9'é ]", "");
+        } else if (file.hasID3v1Tag() && !file.getID3v1Tag().getSongTitle().isEmpty()) {
+            return file.getID3v1Tag().getSongTitle().replaceAll("[^A-Za-z0-9'é ]", "");
         } else {
-            return input.getName().isEmpty() ? input.getName() : "Error";
+            return input.getName().isEmpty() ? input.getName() : "-";
         }
 
     }
 
     public static String getArtist(File input) throws IOException, TagException {
         file = new MP3File(input);
-        if (file.hasID3v2Tag()) {
-            return file.getID3v2Tag().getLeadArtist();
-        } else if (file.hasID3v1Tag()) {
-            return file.getID3v1Tag().getLeadArtist();
+        if (file.hasID3v2Tag() && !file.getID3v2Tag().getLeadArtist().isEmpty()) {
+            return file.getID3v2Tag().getLeadArtist().replaceAll("[^A-Za-z0-9'é ]", "");
+        } else if (file.hasID3v1Tag() && !file.getID3v1Tag().getLeadArtist().isEmpty()) {
+            return file.getID3v1Tag().getLeadArtist().replaceAll("[^A-Za-z0-9'é ]", "");
         } else {
-            return input.getName().isEmpty() ? input.getName() : "Error";
+            return input.getName().isEmpty() ? input.getName() : "-";
         }
 
     }
 
     public static String getAlbum(File input) throws IOException, TagException {
         file = new MP3File(input);
-        if (file.hasID3v2Tag()) {
-            return file.getID3v2Tag().getAlbumTitle();
-        } else if (file.hasID3v1Tag()) {
-            return file.getID3v1Tag().getAlbumTitle();
+        if (file.hasID3v2Tag() && !file.getID3v2Tag().getAlbumTitle().isEmpty()) {
+            return file.getID3v2Tag().getAlbumTitle().replaceAll("[^A-Za-z0-9'é ]", "");
+        } else if (file.hasID3v1Tag() && !file.getID3v1Tag().getAlbumTitle().isEmpty()) {
+            return file.getID3v1Tag().getAlbumTitle().replaceAll("[^A-Za-z0-9'é ]", "");
         } else {
-            return input.getName().isEmpty() ? input.getName() : "Error";
+            return input.getName().isEmpty() ? input.getName() : "-";
         }
 
     }
@@ -254,7 +271,14 @@ public class Util {
         return s;
     }
 
-    public int randInt(int high, int low) {
+    /**
+     * A random number between low and high
+     *
+     * @param low the lower boundary (inclusive)
+     * @param high the upper boundary (exclusive)
+     * @return integer
+     */
+    public int randInt(int low, int high) {
         return r.nextInt(high - low) + low;
     }
 

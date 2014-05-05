@@ -21,15 +21,15 @@ import javax.sound.sampled.UnsupportedAudioFileException;
  * @author Jacob Moss
  */
 public class AmplitudeCollector implements Runnable {
-
+    
     private final File song;
     private XYChart.Series series = new XYChart.Series();
     private CollectionListener listener;
-
+    
     public AmplitudeCollector(File song) {
         this.song = song;
     }
-
+    
     @Override
     public void run() {
         try {
@@ -46,30 +46,35 @@ public class AmplitudeCollector implements Runnable {
                         false);                     //bigendian?
                 din = AudioSystem.getAudioInputStream(decodedFormat, in);
 
+                /*
+                 din: the audio byte stream containing amplitudes
+                 temp: byte array to store the next four bytes in the din
+                 dos: data stream to write shorts onto
+                 */
                 byte[] temp = new byte[4];
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
                 DataOutputStream dos = new DataOutputStream(bos);
                 int i = 0;
                 while (din.read(temp, 0, 4) != -1) {
-
-                    dos.writeShort(((temp[1] * 256 + temp[0]) + (temp[3] * 256 + temp[2])) / 2); //average of two channels
+                    
+                    dos.writeShort((temp[1] * 256 + temp[0]) / 2 + (temp[3] * 256 + temp[2]) / 2); //average of two channels (divided by two twice to give make sure number does not wrap around)
                     i++;
-
+                    
                 }
-
+                
                 byte[] bytes = bos.toByteArray();
                 ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
                 DataInputStream dis = new DataInputStream(bis);
-
+                
                 int len = 0, index = 0;
                 int offset = 0, skip = (bytes.length / 2) / (int) Main.analyser.getWidth();
                 final short[] mix = new short[((bytes.length / 2) / skip)];
-                int disLength = bytes.length / 2;
-                float xInterval = (float) Util.getDuration(song) / (float) mix.length;
-                float add = xInterval;
+                int disLength = bytes.length / 2; //a prediction on how large the dos stream is 
+                float xInterval = (float) Util.getDuration(song) / (float) mix.length; //step-size for x axis
+                final float add = xInterval; //copy of the interval so that the it can be added on to the interval each time
                 Util.err(Util.getDuration(song) + "/" + mix.length);
                 Util.err(xInterval);
-                while (1 > 0) {
+                while (1 > 0) { //infinite, only stopped when the ArrayIndexOutOfBoundsException is thrown (or program crashes!)
                     while (offset < skip) {
                         offset += dis.skip(skip - offset);
                     }
@@ -82,29 +87,28 @@ public class AmplitudeCollector implements Runnable {
                         Util.err("End of stream");
                         break;
                     }
-
+                    
                     series.getData().add(new XYChart.Data(xInterval, mix[index]));
                     index++;
                 }
 
+                //==== Predictions should equal real values ====//
                 Util.err(disLength + " == " + i);
                 Util.err(index + "  ==  " + mix.length);
+                //==============================================//
                 Platform.runLater(new Runnable() {
                     @Override
                     public void run() {
-
-                        Util.err("Finished amplitude collection");
-                        Notification.showPopupMessage("Collection has finished, proceeding with analysis", Main.getStage());
-                        listener.ampCollectionFinished(mix, series);
+                        listener.ampCollectionFinished(mix, series); //finish
                     }
                 });
-
+                
             }
         } catch (IOException | UnsupportedAudioFileException e) {
             Util.err("Error." + e.getLocalizedMessage());
         }
     }
-
+    
     public void setListener(CollectionListener list) {
         listener = list;
     }

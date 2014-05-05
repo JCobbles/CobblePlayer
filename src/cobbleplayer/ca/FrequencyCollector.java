@@ -9,23 +9,10 @@ import static cobbleplayer.AnalysisController.position;
 import static cobbleplayer.GUIController.samples;
 import cobbleplayer.utilities.Util;
 import ddf.minim.AudioPlayer;
-import ddf.minim.AudioSample;
 import ddf.minim.Minim;
 import ddf.minim.analysis.FFT;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.UnsupportedAudioFileException;
 
 /**
  *
@@ -119,12 +106,12 @@ public class FrequencyCollector implements Runnable {
             }
             fft.forward(song.mix);
             position.setText("" + song.position() / 1000);
-            one.add(fft.calcAvg(20, 1000));
-            two.add(fft.calcAvg(1000, 3000));
-            three.add(fft.calcAvg(3000, 10000));
-            four.add(fft.calcAvg(10000, 30000));
-            five.add(fft.calcAvg(30000, 60000));
-            six.add(fft.calcAvg(60000, 100000));
+            one.add(fft.calcAvg(20, 100));
+            two.add(fft.calcAvg(100, 300));
+            three.add(fft.calcAvg(300, 900));
+            four.add(fft.calcAvg(900, 1200));
+            five.add(fft.calcAvg(1200, 16000));
+            six.add(fft.calcAvg(16000, 20000));
         }
         song.close();
         listener.freqCollectionFinished(one, two, three, four, five, six);

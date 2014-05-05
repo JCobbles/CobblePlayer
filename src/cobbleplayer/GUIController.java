@@ -22,7 +22,6 @@ import cobbleplayer.utilities.ImportListener;
 import cobbleplayer.utilities.ModalDialog;
 import cobbleplayer.utilities.Util;
 import java.awt.Desktop;
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
@@ -40,12 +39,14 @@ import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
@@ -58,6 +59,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.TransferMode;
+import javafx.concurrent.Task;
 import javafx.stage.WindowEvent;
 import javafx.util.Callback;
 import javax.sound.sampled.AudioFormat;
@@ -71,21 +73,23 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 public class GUIController implements Initializable, ImportListener {
 
     @FXML
-    Button pauseToggleButton, repeatButton, shuffleButton;
+    ComboBox moreInfo;
+    @FXML
+    Button pauseToggleButton, repeatButton, shuffleButton, titleField;
     @FXML
     TableView musicTable;
     @FXML
     ProgressBar seeker;
     @FXML
-    Slider seek, volSlider, rateSlider, balanceSlider;
+    Slider seekSlider, volSlider, rateSlider, balanceSlider;
     @FXML
     ListView playlists;
     @FXML
-    Label t1, endTime, notifArea;
+    Label t1, endTime, notifArea, items;
     @FXML
     Button previousButton, nextButton;
     @FXML
-    TextField pNameField, pDescriptionField, durField, albumField, artistField, titleField, encodingArea, channelsArea;
+    TextField pNameField, pDescriptionField, albumField, artistField, comboField;//encodingArea, channelsArea, durfield
     @FXML
     static TextField genreArea;
     @FXML
@@ -101,6 +105,7 @@ public class GUIController implements Initializable, ImportListener {
     private boolean shuffle = false, setSeeker = true, repeat = false, editing = false;
     private final ImageView iPlay = new ImageView("/resources/play.png"), iPause = new ImageView("/resources/pause.png");
     private double volume = 1;
+    private String encoding, channels;
     public static boolean autoload = true, show = true;
     private static List<Playlist> importList = new ArrayList<>();
     public Playlist library;
@@ -117,14 +122,14 @@ public class GUIController implements Initializable, ImportListener {
     public void initialize(URL url, ResourceBundle rb) {
         util.give(notifArea);
         util.write("Loading...");
-        initiateSliders();
+        intiateGUIListeners();
         if (!importList.isEmpty()) {
-            util.write("Importing songs & playlists from previous session...");
+            util.err("Importing songs & playlists from previous session...");
             playlistData.addAll(importList);
         } else {
             library = new Playlist("Library", data);
             playlistData.add(library);
-            util.write("No songs played from previous session");
+            util.err("No songs played from previous session");
         }
         initiateTable();
         initiatePlaylists();
@@ -132,7 +137,18 @@ public class GUIController implements Initializable, ImportListener {
         util.write("Loaded.");
     }
 
-    private void initiateSliders() {
+    private void intiateGUIListeners() {
+
+        ObservableList<String> infos = FXCollections.observableArrayList("Time", "Channels", "Encoding");
+        moreInfo.setItems(infos);
+        moreInfo.getSelectionModel().clearAndSelect(0);
+        moreInfo.getSelectionModel().selectedIndexProperty().addListener(new ChangeListener<Number>() {
+            @Override
+            public void changed(ObservableValue<? extends Number> ov, Number t, Number t1) {
+                setMoreInfoBox(t1.intValue());
+
+            }
+        });
         rateSlider.valueProperty().addListener(new ChangeListener<Number>() {
             @Override
             public void changed(ObservableValue<? extends Number> ov, Number t, Number t1) {
@@ -161,16 +177,26 @@ public class GUIController implements Initializable, ImportListener {
                 }
             }
         });
-        seek.setMax(1);
-        seek.setMin(0);
-        seek.valueProperty().addListener(new ChangeListener<Number>() {
+//        seek.setMax(1);
+//        seeker.progressProperty().bind(seekSlider.valueProperty());
+        seeker.progressProperty().addListener(new ChangeListener<Number>() {
+            @Override
+            public void changed(ObservableValue<? extends Number> ov, Number t, Number time1) {
+//                Util.err(t1.doubleValue());
+
+                if (setSeeker) {
+                    t1.setText(musicController.getPositionAsString());
+                    seekSlider.setValue(musicController.getPosition());
+                }
+            }
+        });
+//        seekSlider.setMin(0);
+        seekSlider.valueProperty().addListener(new ChangeListener<Number>() {
             @Override
             public void changed(ObservableValue<? extends Number> ov,
                     Number old_val, Number new_val) {
-                if (seeker.getProgress() != -1 && musicController.getCurrent() != null && !setSeeker) {
-                    seeker.setProgress(new_val.doubleValue() / musicController.getCurrent().getSeconds());
-                    util.write(new_val.doubleValue());
-                    musicController.seek(new_val.doubleValue());
+                if (!setSeeker) {
+                    t1.setText(Util.timeToString((new_val.floatValue())));
                 }
             }
         });
@@ -179,7 +205,7 @@ public class GUIController implements Initializable, ImportListener {
     private void initiateTable() {
         musicTable.getColumns().addAll(util.initColumns());
         musicTable.setItems(playlistData.get(0).getSongs());
-
+        musicTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         musicTable.setOnMouseClicked(new EventHandler<MouseEvent>() { //playing song from table
             @Override
             public void handle(MouseEvent t) {
@@ -218,8 +244,25 @@ public class GUIController implements Initializable, ImportListener {
             @Override
             public void handle(KeyEvent t) {
                 if (t.getCode().equals(KeyCode.DELETE) && musicTable.getSelectionModel().getSelectedItem() != null) {
-                    musicTable.getItems().remove((Song) musicTable.getSelectionModel().getSelectedItem());
+                    Util.err("Removing " + musicTable.getSelectionModel().getSelectedItems().size() + "songs");
+//                    for (Song s : (ObservableList<Song>) musicTable.getSelectionModel().getSelectedItems()) {
+//                        if (!musicTable.getItems().remove(s)) {
+//                            Util.err("Error removing" + s.toString());
+//                        }
+//                    }
+                    if (musicTable.getSelectionModel().getSelectedItems().size() == 1) {
+
+                    }
+                    int from = (int) musicTable.getSelectionModel().getSelectedIndices().get(0);
+                    int to = from + ((int) musicTable.getSelectionModel().getSelectedIndices().size());
+                    Util.err("From: " + from + " to: " + to);
+                    musicTable.getItems().remove(from, to);
                     musicTable.getSelectionModel().clearSelection();
+                    updateItemCount();
+//                    ((Playlist) playlists.getSelectionModel().getSelectedItem()).removeAll(musicTable.getSelectionModel().getSelectedItems());
+//                    System.gc();
+                } else if (t.getCode().equals(KeyCode.SPACE)) {
+                    actionPause();
                 }
             }
         });
@@ -240,18 +283,23 @@ public class GUIController implements Initializable, ImportListener {
 
     private void initiatePlaylists() {
         playlists.setItems(playlistData);
+        playlists.setOnKeyTyped(new EventHandler<KeyEvent>() {
+            @Override
+            public void handle(KeyEvent t) {
+                if (t.getCode().equals(KeyCode.SPACE)) {
+                    Util.err("Space detected");//@TODO
+                    actionPause();
+                }
+            }
+        });
         playlists.setOnMouseClicked(new EventHandler<MouseEvent>() { //playing song from table
             @Override
             public void handle(MouseEvent t) {
                 if (t.getClickCount() > 1 && musicTable.getItems().size() > 0) {
-                    try {
+                    if (musicTable.getItems().size() == 0) {
                         musicTable.setDisable(true);
-
                         play((Song) musicTable.getItems().get(util.randInt(musicTable.getItems().size(), 0)));
-                    } catch (Exception ignore) {
-                        ignore.printStackTrace();
                     }
-
                 }
             }
         });
@@ -262,6 +310,7 @@ public class GUIController implements Initializable, ImportListener {
                         if (!editing && playlistData.size() > 0) {
                             pNameField.setText(new_p.getName());
                             musicTable.setItems(new_p.getSongs());
+                            items.setText("" + new_p.getSongs().size());
                         }
                     }
                 });
@@ -316,46 +365,63 @@ public class GUIController implements Initializable, ImportListener {
     public void set(Song song) {
         Main.setTitle(APP_TITLE + " :: " + song.toString());
         volSlider.setValue(volume);
-        seeker.setProgress(0.0);
-        seek.setMax(song.getSeconds());
-        seek.setValue(0);
+//        seeker.setProgress(0.0);
+        seekSlider.setMax(song.getSeconds());
+//        seekSlider.setValue(0);
         titleField.setText(song.toString());
         artistField.setText(song.getArtist());
         albumField.setText(song.getAlbum());
-        durField.setText(song.getDuration());
         endTime.setText(song.getDuration());
         genreArea.setText(song.getGenre());
         pauseToggleButton.setGraphic(iPause);
         nextButton.setDisable(false);
         previousButton.setDisable(false);
         musicTable.setDisable(false);
-
+        setMoreInfoBox(moreInfo.getSelectionModel().getSelectedIndex());
         try {
             AudioFormat f = musicController.getFormat();
-            encodingArea.setText(f.getEncoding().toString());
+            encoding = (f.getEncoding().toString());
             if (f.getChannels() > 0) {
-                channelsArea.setText("Stereo");
+                channels = ("Stereo");
             } else {
-                channelsArea.setText("Mono");
+                channels = ("Mono");
             }
         } catch (UnsupportedAudioFileException | IOException e) {
-
+            Util.log(e.getLocalizedMessage());
         }
+    }
 
+    private void setMoreInfoBox(int idx) {
+        if (musicController.getCurrent() != null) {
+            switch (idx) {
+                case 0:
+                    comboField.setText(musicController.getCurrent().getDuration());
+                    break;
+                case 1:
+                    comboField.setText(channels);
+                    break;
+                case 2:
+                    comboField.setText(encoding);
+                    break;
+            }
+        }
     }
 
     private void trackChange(boolean next) {
         if (musicController.getCurrent() == null) {
-            play((Song) musicTable.getItems().get(util.randInt(musicTable.getItems().size(), 0)));
+            play((Song) musicTable.getItems().get(util.randInt(0, musicTable.getItems().size())));
         } else {
             if (shuffle) {
-                play((Song) musicTable.getItems().get(util.randInt(data.size(), 0)));
+                play((Song) musicTable.getItems().get(util.randInt(0, musicTable.getItems().size())));
             } else {
                 int i = (next) ? musicTable.getItems().indexOf(musicController.getCurrent()) + 1
                         : musicTable.getItems().indexOf(musicController.getCurrent()) - 1;
-                play((Song) musicTable.getItems().get(i));
+                if (i == musicTable.getItems().size()) {
+                    play((Song) musicTable.getItems().get(0));
+                } else {
+                    play((Song) musicTable.getItems().get(i));
+                }
             }
-
         }
     }
 
@@ -369,8 +435,7 @@ public class GUIController implements Initializable, ImportListener {
         }
     }
 
-    @FXML
-    private void actionPause(ActionEvent event) {
+    public void actionPause() {
         if (musicController.getCurrent() != null) {
             if (!musicController.playing) {
                 musicController.resume();
@@ -380,7 +445,11 @@ public class GUIController implements Initializable, ImportListener {
                 pauseToggleButton.setGraphic(iPlay);
             }
         }
+    }
 
+    @FXML
+    public void actionPause(ActionEvent event) {
+        actionPause();
     }
 
     @FXML
@@ -420,21 +489,27 @@ public class GUIController implements Initializable, ImportListener {
     }
 
     @Override
-    public void finished(final ModalDialog di) {
+    public void importFinished(final ModalDialog di) {
         Platform.runLater(new Runnable() {
             @Override
             public void run() {
                 di.close();
+                updateItemCount();
             }
         });
         AnalysisController.active = true;
+        System.gc();
+    }
+
+    private void updateItemCount() {
+        items.setText("" + musicTable.getItems().size());
     }
 
     public void updateSeeker(double value) {
         seeker.setProgress(value);
-        if (setSeeker) {
-            seek.setValue(musicController.getPosition());
-        }
+//        if (setSeeker) {
+        seekSlider.setValue(musicController.getPosition());
+//        }
         //t1.setText(currentSong.getPositionAsString());
     }
 
@@ -473,6 +548,15 @@ public class GUIController implements Initializable, ImportListener {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    @FXML
+    private void actionJumpToCurrent(ActionEvent e) {
+        if (musicController.getCurrent() != null) {
+            int idx = musicTable.getItems().indexOf(musicController.getCurrent());
+            musicTable.getSelectionModel().clearAndSelect(idx);
+            musicTable.scrollTo(idx);
         }
     }
 
@@ -559,7 +643,7 @@ public class GUIController implements Initializable, ImportListener {
     @FXML
     private void actionEditCheckbox(ActionEvent event) {
         edit = !edit;
-        titleField.setEditable(edit);
+//        titleField.setEditable(edit);
         titleField.setDisable(!edit);
         artistField.setEditable(edit);
         artistField.setDisable(!edit);
@@ -620,11 +704,22 @@ public class GUIController implements Initializable, ImportListener {
     @FXML
     private void sliderMouseEnter(MouseEvent ev) {
         setSeeker = false;
+//        musicController.seekThread.pause();
+//        seekSlider.valueProperty().unbind();
+//        musicController.seekTask.pause();
+//        seekSlider.valueProperty().unbind();
+//        seek.valueProperty().unbind();
     }
 
     @FXML
     private void sliderMouseExit(MouseEvent ev) {
+        musicController.seek(seekSlider.getValue());
+//        seekSlider.valueProperty().bind(musicController.seekTask.progressProperty());
         setSeeker = true;
+//        musicController.seekThread.resume();
+//        seek.valueProperty().bind(musicController.seekTask.progressProperty());
+//        musicController.seekTask.resume();
+//        seekSlider.valueProperty().bind(seeker.progressProperty());
     }
 
     public void songEnded() {
@@ -636,6 +731,7 @@ public class GUIController implements Initializable, ImportListener {
         }
     }
 
+    @Deprecated
     public void updateTimes(final String cur) {
         Platform.runLater(new Runnable() {
             @Override

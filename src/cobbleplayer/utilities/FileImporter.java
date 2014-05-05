@@ -1,18 +1,26 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * Copyright (C) 2014 Jacob Moss
+ *
+ * This program is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program. If not, see <http://www.gnu.org/licenses/>
+ *
  */
 package cobbleplayer.utilities;
 
-import cobbleplayer.Playlist;
 import cobbleplayer.Song;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javafx.scene.input.Dragboard;
 import org.farng.mp3.TagException;
 
 /**
@@ -20,8 +28,8 @@ import org.farng.mp3.TagException;
  */
 public class FileImporter implements Runnable {
 
-    private ImportListener listener;
-    private List<File> files;
+    private final ImportListener listener;
+    private final List<File> files;
     private ModalDialog di;
 
     public FileImporter(ImportListener listener, List<File> files, ModalDialog dialog) {
@@ -47,7 +55,7 @@ public class FileImporter implements Runnable {
                 listener.songImported(importSong(file), di);
             }
         }
-        listener.finished(di);
+        listener.importFinished(di);
     }
 
     private Song importSong(File file) {
@@ -59,6 +67,7 @@ public class FileImporter implements Runnable {
                         Util.getDurationAsString(file), Util.getAlbum(file), Util.getDuration(file));
             } catch (IOException | TagException ex) {
                 Util.log(ex.getLocalizedMessage());
+                Util.log(ex.getStackTrace().toString());
             }
         }
         return null;

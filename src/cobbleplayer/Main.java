@@ -20,6 +20,7 @@ package cobbleplayer;
 import cobbleplayer.utilities.ModalDialog;
 import cobbleplayer.utilities.PlaylistHolder;
 import cobbleplayer.utilities.Util;
+import com.sun.javafx.perf.PerformanceTracker;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -36,6 +37,9 @@ import javafx.fxml.FXMLLoader;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.image.Image;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -55,6 +59,7 @@ public class Main extends Application {
     public static SettingsController sC;
     public static AnalysisController aC;
     private static URL analysisResource;
+    public static PerformanceTracker perfTracker;
 
     @Override
     public void start(Stage primaryStage) {
@@ -122,7 +127,8 @@ public class Main extends Application {
         try {
             //gui
             FXMLLoader load = new FXMLLoader(getClass().getResource("/resources/GUI.fxml"));
-            load.setController(new GUIController());
+            final GUIController guiController = new GUIController();
+            load.setController(guiController);
             //settings
             FXMLLoader load2 = new FXMLLoader(getClass().getResource("/resources/settings.fxml"));
             sC = new SettingsController();
@@ -140,16 +146,16 @@ public class Main extends Application {
 //            GUIController.importFiles(songList);
             scene = new Scene((AnchorPane) load.load());
             primaryStage.setScene(scene);
-//            Screen screen = Screen.getPrimary();
-//            Rectangle2D bounds = screen.getVisualBounds();
-//            primaryStage.setX(bounds.getMinX());
-//            primaryStage.setY(bounds.getMinY());
-//            primaryStage.setWidth(bounds.getWidth());
-//            primaryStage.setHeight(bounds.getHeight());
-
+            Screen screen = Screen.getPrimary();
+            Rectangle2D bounds = screen.getVisualBounds();
+            primaryStage.setX(bounds.getMinX());
+            primaryStage.setY(bounds.getMinY());
+            primaryStage.setWidth(bounds.getWidth() - 50);
+            primaryStage.setHeight(bounds.getHeight() - 50);
+            primaryStage.getIcons().add(new Image(Main.class.getResourceAsStream("/resources/favicon.png")));
             primaryStage.setTitle(APP_TITLE);
             primaryStage.show();
-
+            perfTracker = PerformanceTracker.getSceneTracker(scene);
             Util.DEBUG = true;
 
         } catch (IOException ex) {
@@ -167,7 +173,6 @@ public class Main extends Application {
 //            Util.log(ex);
 //        }
 //    }
-
     public static void close() {
         if (GUIController.show) {
             Button yes = new Button("Yes");
@@ -206,7 +211,7 @@ public class Main extends Application {
 
     public static void endClose() {
         saveConfig();
-        Util.closeLog();
+        Util.closeLog(); //force unprinted bytes to be logged and close the stream
         System.exit(0);
     }
 
