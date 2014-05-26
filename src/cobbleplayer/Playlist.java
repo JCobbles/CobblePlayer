@@ -40,7 +40,7 @@ public class Playlist {
 
     public void write(BufferedWriter writer) {
         try {
-            writer.write(Util.PLAYLIST_CODE + name);
+            writer.write(Util.NEW_BIT_CODE + name);
             writer.newLine();
             for (Song s : songs) {
                 writer.write(s.getFilepath());

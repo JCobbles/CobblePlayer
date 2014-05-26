@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package cobbleplayer.utilities;
 
 import java.util.logging.Level;
@@ -23,7 +18,7 @@ import javafx.util.Duration;
  *
  * @author Jacob
  */
-public class Notification {
+public class Toast {
 
     private static Popup createPopup(final String message) {
         final Popup popup = new Popup();

@@ -1,11 +1,10 @@
 package cobbleplayer;
 
 import static cobbleplayer.GUIController.samples;
-import cobbleplayer.ca.AmplitudeAnalyser;
 import cobbleplayer.ca.AmplitudeCollector;
 import cobbleplayer.ca.CollectionListener;
 import cobbleplayer.ca.FrequencyCollector;
-import cobbleplayer.utilities.Notification;
+import cobbleplayer.utilities.Toast;
 import cobbleplayer.utilities.Util;
 import ddf.minim.AudioPlayer;
 import ddf.minim.Minim;
@@ -13,7 +12,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -112,7 +110,6 @@ public class AnalysisController implements Initializable, CollectionListener {
             Util.err("SONGCHOOSER IS NULL");
         }
         songChooser.setCellFactory(new Callback<ListView<Song>, ListCell<Song>>() {
-
             @Override
             public ListCell<Song> call(ListView<Song> p) {
                 final ListCell<Song> sc = new ListCell<Song>() {
@@ -225,7 +222,7 @@ public class AnalysisController implements Initializable, CollectionListener {
         Platform.runLater(new Runnable() {
             @Override
             public void run() {
-                Notification.showPopupMessage("Collection has finished, proceeding with analysis", Main.getStage());
+                Toast.showPopupMessage("Collection has finished, proceeding with analysis", Main.getStage());
             }
         });
 

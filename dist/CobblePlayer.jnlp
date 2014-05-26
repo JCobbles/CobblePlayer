@@ -10,8 +10,9 @@
     <jfx:javafx-runtime version="2.2+" href="http://javadl.sun.com/webapps/download/GetFile/javafx-latest/windows-i586/javafx2.jnlp"/>
   </resources>
   <resources>
-    <j2se version="1.6+" href="http://java.sun.com/products/autodl/j2se"/>
-    <jar href="CobblePlayer.jar" size="137702" download="eager" />
+    <j2se version="1.6+" java-vm-args="-Xms32m -Xmx100m "  href="http://java.sun.com/products/autodl/j2se"/>
+    <jar href="lib/CobblePlayerPreloader.jar" size="5714" download="progress" />
+    <jar href="CobblePlayer.jar" size="177267" download="eager" />
     <jar href="lib/jid3lib-0.5.4.jar" size="192186" download="eager" />
     <jar href="lib/jlayer_custom.jar" size="77648" download="eager" />
     <jar href="lib/minim.jar" size="147464" download="eager" />
@@ -21,6 +22,6 @@
   <applet-desc  width="800" height="600" main-class="com.javafx.main.NoJavaFXFallback"  name="CobblePlayer" >
     <param name="requiredFXVersion" value="2.2+"/>
   </applet-desc>
-  <jfx:javafx-desc  width="800" height="600" main-class="cobbleplayer.Main"  name="CobblePlayer" />
+  <jfx:javafx-desc  width="800" height="600" main-class="cobbleplayer.Main"  name="CobblePlayer"  preloader-class="cobbleplayerpreloader.CobblePlayerPreloader"/>
   <update check="always"/>
 </jnlp>

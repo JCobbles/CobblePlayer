@@ -27,8 +27,8 @@ public class PlaylistHolder implements Serializable {
             }
             writer.write(Util.END_CODE);
             writer.close();
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (IOException e) {
+            Util.err(e.getLocalizedMessage());
         }
     }
 

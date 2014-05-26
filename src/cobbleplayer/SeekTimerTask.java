@@ -29,7 +29,7 @@ public class SeekTimerTask extends TimerTask {
 
     private final MusicController con;
     private boolean stop = false, shorten = false, pause = false;
-    private SeekTask parent;
+    private final SeekTask parent;
 
     public SeekTimerTask(MusicController con, SeekTask parent) {
         this.con = con;
@@ -54,7 +54,6 @@ public class SeekTimerTask extends TimerTask {
                         @Override
                         public void run() {
                             con.songEnded();
-
                         }
                     });
                     pause = true;

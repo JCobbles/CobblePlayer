@@ -17,7 +17,9 @@
  */
 package cobbleplayer.utilities;
 
+import cobbleplayer.GUIController;
 import cobbleplayer.Main;
+import cobbleplayer.SettingsController;
 import cobbleplayer.Song;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -26,11 +28,14 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
@@ -61,19 +66,35 @@ import org.farng.mp3.TagException;
  */
 public class Util {
 
-    private Random r = new Random();
+    private static Random r = new Random();
     private static Label notifArea;
     private static MP3File file;
     public static boolean DEBUG;
     private static PrintWriter log;
+    public static final Button buttonNo;
+    public static final Button buttonCancel;
+    public static final EventHandler<ActionEvent> cancelEvent;
     //constants
     public final static String ERRORLOG_FILENAME = "errorlog.cob";
     public final static String CONFIG_FILENAME = "Config.cob";
+    public final static String APP_TITLE = "CobblePlayer";
     public final static String PLAYLIST_FILENAME = "Playlists.cob";
-    public final static String PLAYLIST_CODE = "59y56x712x38y";
+    public final static String NEW_BIT_CODE = "59y56x712x38y";
     public final static String END_CODE = "923728fj384539kf7";
+    public final static String FILTERS_FILENAME = "Filters.cob";
+    public final static int CURRENT_VERSION = 2;
 
     static {
+        cancelEvent = new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent t) {
+                ModalDialog.exit();
+            }
+        };
+        buttonNo = new Button("No");
+        buttonNo.setOnAction(cancelEvent);
+        buttonCancel = new Button("No");
+        buttonCancel.setOnAction(cancelEvent);
         try {
             log = new PrintWriter(new BufferedWriter(new FileWriter(Util.ERRORLOG_FILENAME, true)));
         } catch (IOException ex) {
@@ -89,8 +110,10 @@ public class Util {
             log.close();
         }
     }
+
     /**
      * Prints the message to error file
+     *
      * @param s the string to print
      */
     public static void log(String s) {
@@ -108,15 +131,56 @@ public class Util {
 
     }
 
+    public static void initiateTimerTask() {
+        Timer t = new Timer();
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                
+            }
+        };
+        t.scheduleAtFixedRate(task, 0, 600000);
+    }
+
+    public static void checkArtistFiltersAreUpdated(List<SettingsController.ArtistFilterItem> list) {
+        Calendar cal = Calendar.getInstance();
+        List<SettingsController.ArtistFilterItem> deletionList = new ArrayList<>();
+        for (SettingsController.ArtistFilterItem filter : list) {
+            if (filter.millis < cal.getTimeInMillis()) {
+                Util.err("removing a filter from the list\n" + cal.getTimeInMillis() + " filter: " + filter.millis);
+                deletionList.add(filter);
+            }
+        }
+        for (SettingsController.ArtistFilterItem item : deletionList) {
+            GUIController.filters.remove(item);
+        }
+        SettingsController.resetItems();
+    }
+
+    public static void checkSongFiltersAreUpdated(List<SettingsController.ArtistFilterItem> list) {
+        for (SettingsController.ArtistFilterItem filter : list) {
+
+        }
+    }
+
+    public static boolean filterArtistContains(List<SettingsController.ArtistFilterItem> list, String artist) {
+        for (SettingsController.ArtistFilterItem filter : list) {
+            if (filter.artist.equals(artist)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static String getTitle(File input) throws TagException, IOException {
         if (!input.exists()) {
             log("!input.exists()" + input.getAbsolutePath());
         }
         file = new MP3File(input);
         if (file.hasID3v2Tag() && !file.getID3v2Tag().getSongTitle().isEmpty()) {
-            return file.getID3v2Tag().getSongTitle().replaceAll("[^A-Za-z0-9'é ]", "");
+            return file.getID3v2Tag().getSongTitle().replaceAll("[^A-Za-z0-9'\\p{M}\\- ]", "");
         } else if (file.hasID3v1Tag() && !file.getID3v1Tag().getSongTitle().isEmpty()) {
-            return file.getID3v1Tag().getSongTitle().replaceAll("[^A-Za-z0-9'é ]", "");
+            return file.getID3v1Tag().getSongTitle().replaceAll("[^A-Za-z0-9'\\p{M}\\- ]", "");
         } else {
             return input.getName().isEmpty() ? input.getName() : "-";
         }
@@ -126,9 +190,9 @@ public class Util {
     public static String getArtist(File input) throws IOException, TagException {
         file = new MP3File(input);
         if (file.hasID3v2Tag() && !file.getID3v2Tag().getLeadArtist().isEmpty()) {
-            return file.getID3v2Tag().getLeadArtist().replaceAll("[^A-Za-z0-9'é ]", "");
+            return file.getID3v2Tag().getLeadArtist().replaceAll("[^A-Za-z0-9'\\p{M}\\- ]", "");
         } else if (file.hasID3v1Tag() && !file.getID3v1Tag().getLeadArtist().isEmpty()) {
-            return file.getID3v1Tag().getLeadArtist().replaceAll("[^A-Za-z0-9'é ]", "");
+            return file.getID3v1Tag().getLeadArtist().replaceAll("[^A-Za-z0-9'\\p{M}\\- ]", "");
         } else {
             return input.getName().isEmpty() ? input.getName() : "-";
         }
@@ -198,13 +262,17 @@ public class Util {
         this.notifArea = notifArea;
     }
 
+    public static BufferedWriter writeNewFile(String filename) throws IOException {
+        return new BufferedWriter(new FileWriter(filename));
+    }
+
     /**
      * Creates new modal prompting textual input
      *
      * @param message prompt to display
      * @return the inputted string
      */
-    public String getString(String message) {
+    public static String getString(String message) {
         final Stage dialog = new Stage();
         Window owner = Main.getStage().getOwner();
         dialog.setTitle(message);
@@ -261,7 +329,7 @@ public class Util {
      * @param low the lower boundary
      * @return a List<Integer> of random numbers within the boundaries
      */
-    public List<Integer> randIntList(int high, int low) {
+    public static List<Integer> randIntList(int high, int low) {
         int idx = 0;
         List<Integer> s = new ArrayList<Integer>();
         while (high != idx) {
@@ -278,7 +346,7 @@ public class Util {
      * @param high the upper boundary (exclusive)
      * @return integer
      */
-    public int randInt(int low, int high) {
+    public static int randInt(int low, int high) {
         return r.nextInt(high - low) + low;
     }
 

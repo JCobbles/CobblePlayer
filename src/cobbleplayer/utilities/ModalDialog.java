@@ -10,11 +10,8 @@ package cobbleplayer.utilities;
  * @author Jacob
  */
 import cobbleplayer.Main;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import javafx.application.Platform;
-import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Group;
 import javafx.scene.Scene;

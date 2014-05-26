@@ -1,7 +1,7 @@
 package cobbleplayer.ca;
 
 import cobbleplayer.Main;
-import cobbleplayer.utilities.Notification;
+import cobbleplayer.utilities.Toast;
 import cobbleplayer.utilities.Util;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

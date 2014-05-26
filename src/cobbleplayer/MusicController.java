@@ -24,6 +24,7 @@ import java.util.Map;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Task;
+import javafx.scene.media.AudioEqualizer;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.media.MediaPlayer.Status;
@@ -55,6 +56,9 @@ public class MusicController {
 
     }
 
+    public AudioEqualizer getAudioEqualizer() {
+        return player.getAudioEqualizer();
+    }
     boolean onetimeuse = true;
 
     /**
@@ -107,18 +111,6 @@ public class MusicController {
                         break;
                 }
             }
-        });
-        player.setOnPlaying(new Runnable() {
-            @Override
-            public void run() {
-//                if (seekThread != null) {
-//                    seekThread.end();
-//                }
-//                seekThread = new SeekThread(thisController);
-//                Thread seekerThread = new Thread(seekThread);
-
-            }
-
         });
         player.setOnEndOfMedia(new Runnable() {
             @Override
@@ -227,7 +219,7 @@ public class MusicController {
      */
     public void setRate(double value) {
         player.setRate(value);
-        seekTask.adjustTimerSetting((long) ((long) 1000/ value));
+        seekTask.adjustTimerSetting((long) ((long) 1000 / value));
         rate = value;
     }
 
