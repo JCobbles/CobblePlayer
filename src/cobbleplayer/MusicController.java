@@ -178,8 +178,8 @@ public class MusicController {
 
     public void resume() {
         if (player == null) {
-            if (con.musicTable.getItems().size() > 0) {
-                play((Song) con.musicTable.getItems().get(0));
+            if (con.getMusicTable().getItems().size() > 0) {
+                play((Song) con.getMusicTable().getItems().get(0));
             }
         } else {
             player.play();

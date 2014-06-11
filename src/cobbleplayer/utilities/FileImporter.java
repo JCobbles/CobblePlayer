@@ -21,43 +21,56 @@ import cobbleplayer.Song;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javafx.application.Platform;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import org.farng.mp3.TagException;
 
 /**
  * @author Jacob Moss
  */
 public class FileImporter implements Runnable {
-
+    
     private final ImportListener listener;
     private final List<File> files;
-    private ModalDialog di;
-
-    public FileImporter(ImportListener listener, List<File> files, ModalDialog dialog) {
+    public DoubleProperty progressProperty;
+    
+    public FileImporter(ImportListener listener, List<File> files) {
         this.listener = listener;
         this.files = files;
-        di = dialog;
+        progressProperty = new SimpleDoubleProperty();
     }
-
+    
+    private void updateProgress(double value, double max) {
+        Platform.runLater(() -> {
+            progressProperty.set(value / max);
+        });
+        
+    }
+    
     @Override
     public void run() {
+        Logger.getLogger("org.jaudiotagger").setLevel(Level.OFF);
+        int val = 0;
         for (File file : files) {
+            val++;
             if (file.isDirectory()) {
                 File[] files = file.listFiles();
-                int idx = files.length - 1;
-                while (idx != -1) {
-//                    addFileToList(files[idx]);
-                    listener.songImported(importSong(files[idx]), di);
-                    
-                    idx--;
+                for (File f : files) {
+                    val++;
+                    listener.songImported(importSong(f));
+                    updateProgress(val, files.length);
                 }
             } else { //files
-//                addFileToList(file);
-                listener.songImported(importSong(file), di);
+                listener.songImported(importSong(file));
             }
+            updateProgress(val, files.size());
         }
-        listener.importFinished(di);
+        listener.importFinished();
     }
-
+    
     private Song importSong(File file) {
         String extension = (file.getName().lastIndexOf('.') > 0)
                 ? file.getName().substring(file.getName().lastIndexOf('.') + 1) : null;
@@ -65,12 +78,13 @@ public class FileImporter implements Runnable {
             try {
                 return new Song(Util.getTitle(file), Util.getArtist(file), file.getAbsolutePath(),
                         Util.getDurationAsString(file), Util.getAlbum(file), Util.getDuration(file));
-            } catch (IOException | TagException ex) {
+            } catch (IOException ex) {
+                ex.printStackTrace();
                 Util.log(ex.getLocalizedMessage());
                 Util.log(ex.getStackTrace().toString());
             }
         }
         return null;
     }
-
+    
 }

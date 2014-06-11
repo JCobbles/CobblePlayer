@@ -30,7 +30,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.ResourceBundle;
+import javafx.animation.FadeTransition;
+import javafx.animation.ParallelTransition;
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -49,9 +53,11 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.Slider;
 import javafx.scene.control.SplitPane;
+import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.image.ImageView;
@@ -64,9 +70,11 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.Region;
 import javafx.scene.media.EqualizerBand;
 import javafx.stage.WindowEvent;
 import javafx.util.Callback;
+import javafx.util.Duration;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
@@ -76,15 +84,15 @@ import javax.sound.sampled.UnsupportedAudioFileException;
  * @author Jacob Moss This also acts as main interface class
  */
 public class GUIController implements Initializable, ImportListener {
-
+    
     @FXML
     ComboBox moreInfo, presets;
     @FXML
     Button pauseToggleButton, repeatButton, shuffleButton, titleField, previousButton, nextButton, boredButton;
     @FXML
-    static SplitPane mainSplitPane, musicSplitPane;
+    private SplitPane mainSplitPane; //musicSplitPane
     @FXML
-    public TableView musicTable;
+    private TableView musicTable;
     @FXML
     ProgressBar seeker;
     @FXML
@@ -96,24 +104,28 @@ public class GUIController implements Initializable, ImportListener {
     @FXML
     TextField albumField, artistField, comboField;//encodingArea, channelsArea, durfield, pDescriptionField, pNameField
     @FXML
-    static TextField genreArea;
+    TextField genreArea;
     @FXML
     MenuBar menuBar;
     @FXML
     MenuItem settings, analyser;
     @FXML
     AnchorPane leftPaneSplit;
-
+    @FXML
+    Region fileImportVeil;
+    @FXML
+    ProgressIndicator fileImportProgressIndicator;
+    
     private final ObservableList<Song> data = FXCollections.observableArrayList();
-    private static final ObservableList<Playlist> playlistData = FXCollections.observableArrayList();
+    private final ObservableList<Playlist> playlistData = FXCollections.observableArrayList();
     private final Util util = new Util();
-
+    
     private boolean setSeeker = true, repeat = false, editing = false;
     private final ImageView iPlay = new ImageView("/resources/play.png"), iPause = new ImageView("/resources/pause.png");
     private double volume = 1;
     private String encoding, channels;
     public static boolean autoload = true, show = true, shuffle = false;
-    private static List<Playlist> importList = new ArrayList<>();
+    private List<Playlist> importList = new ArrayList<>();
     public Playlist library;
     public final GUIController activeController = this;
     private final MusicController musicController = new MusicController(this);
@@ -123,63 +135,59 @@ public class GUIController implements Initializable, ImportListener {
     private final TrackChange trackChange = new TrackChange(this);
     private final Slider[] sliders = new Slider[10];
     public static ObservableList<SettingsController.ArtistFilterItem> filters = FXCollections.observableArrayList();
+//    public static List<SettingsController.ArtistFilterItem> filters = new ArrayList<>();
+    public BooleanProperty addPreviousSongs = new SimpleBooleanProperty(false);
 
     /**
      * Initialises the controller class.
+     *
+     * @param url the path to FXML doc?
      */
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         util.give(notifArea);
-        util.write("Loading...");
+//        util.write("Loading...");
         intiateGUIListeners();
-        if (!importList.isEmpty()) {
-            util.err("Importing songs & playlists from previous session...");
+        addPreviousSongs.addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) -> {
+            Util.err("Importing songs & playlists from previous session...");
+            playlistData.remove(library);
             playlistData.addAll(importList);
-        } else {
-            library = new Playlist("Library", data);
-            playlistData.add(library);
-            util.err("No songs played from previous session");
-        }
+            playlists.getSelectionModel().clearAndSelect(0);
+            Main.sC.populateFilterDropdowns(musicTable);
+        });
+        library = new Playlist("Library", data);
+        playlistData.add(library);
+        
         initiateTable();
         initiatePlaylists();
         Main.aC.songChooser.setItems(musicTable.getItems());
-        Main.sC.populateFilterDropdowns(musicTable);
         util.write("Loaded.");
-    }
-
-    private void intiateGUIListeners() {
+        
         Util.initiateTimerTask();
-        boredButton.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent t) {
-                actionSettings(new ActionEvent());
-                Main.sC.changeTab(SettingsController.FILTER_TAB);
-            }
+    }
+    
+    private void intiateGUIListeners() {
+        boredButton.setOnAction((ActionEvent event) -> {
+            actionSettings(new ActionEvent());
+            Main.sC.changeTab(SettingsController.FILTER_TAB);
         });
+//        boredButton.setOnAction(new EventHandler<ActionEvent>() {
+//            @Override
+//            public void handle(ActionEvent t) {
+//                actionSettings(new ActionEvent());
+//                Main.sC.changeTab(SettingsController.FILTER_TAB);
+//            }
+//        });
         mainSplitPane.setDividerPosition(0, 0.18);
-        mainSplitPane.getDividers().get(0).positionProperty().addListener(new ChangeListener<Number>() {
-            @Override
-            public void changed(ObservableValue<? extends Number> ov, Number t, Number t1) {
-                if (t1.doubleValue() > 0.22) {
-                    mainSplitPane.setDividerPosition(0, 0.22);
-                } else if (t1.doubleValue() < 0.05) {
-                    mainSplitPane.setDividerPosition(0, 0.05);
-                }
+        mainSplitPane.getDividers().get(0).positionProperty().addListener((ObservableValue<? extends Number> ov, Number t, Number t1) -> {
+            if (t1.doubleValue() > 0.22) {
+                mainSplitPane.setDividerPosition(0, 0.22);
+            } else if (t1.doubleValue() < 0.05) {
+                mainSplitPane.setDividerPosition(0, 0.05);
             }
         });
         SplitPane.setResizableWithParent(leftPaneSplit, Boolean.FALSE);
-        musicSplitPane.getDividers().get(0).positionProperty().addListener(new ChangeListener<Number>() {
-            @Override
-            public void changed(ObservableValue<? extends Number> ov, Number t, Number t1) {
-                if (t1.doubleValue() > 0.7) {
-                    musicSplitPane.setDividerPosition(0, 0.7);//lower limit
-                } else if (t1.doubleValue() < 0.6) {
-                    musicSplitPane.setDividerPosition(0, 0.6); //upper limit
-                }
-            }
-        });
         resetMainSplitPane();
-        resetMusicSplitPane();
         sliders[0] = eq32;
         sliders[1] = eq64;
         sliders[2] = eq125;
@@ -197,250 +205,181 @@ public class GUIController implements Initializable, ImportListener {
             sliders[i].setValue(0);
             sliders[i].setMinorTickCount(0);
             sliders[i].setMajorTickUnit(3);//(EqualizerBand.MAX_GAIN - EqualizerBand.MIN_GAIN) / 9
-            sliders[i].valueProperty().addListener(new ChangeListener<Number>() {
-                @Override
-                public void changed(ObservableValue<? extends Number> arg0, Number oldValue, Number newValue) {
-                    if (musicController.getCurrent() != null) {
-                        musicController.getAudioEqualizer().getBands().get(fi).setGain(newValue.doubleValue());
-                    }
+            sliders[i].valueProperty().addListener((ObservableValue<? extends Number> arg0, Number oldValue, Number newValue) -> {
+                if (musicController.getCurrent() != null) {
+                    musicController.getAudioEqualizer().getBands().get(fi).setGain(newValue.doubleValue());
                 }
             });
         }
         ObservableList<String> infos = FXCollections.observableArrayList("Time", "Channels", "Encoding");
         moreInfo.setItems(infos);
         moreInfo.getSelectionModel().clearAndSelect(0);
-        moreInfo.getSelectionModel().selectedIndexProperty().addListener(new ChangeListener<Number>() {
-            @Override
-            public void changed(ObservableValue<? extends Number> ov, Number t, Number t1) {
-                setMoreInfoBox(t1.intValue());
-
-            }
-        });
+        moreInfo.getSelectionModel().selectedIndexProperty().addListener((ObservableValue<? extends Number> ov, Number t, Number t1)
+                -> setMoreInfoBox(t1.intValue()));
         ObservableList<String> presetList = FXCollections.observableArrayList("General", "R&B/Dance", "Piano", "Pop", "Rap", "Classical");
         presets.setItems(presetList);
-        presets.getSelectionModel().selectedIndexProperty().addListener(new ChangeListener<Number>() {
-            @Override
-            public void changed(ObservableValue<? extends Number> ov, Number t, Number t1) {
-                selectPreset(t1.intValue());
+        presets.getSelectionModel().selectedIndexProperty().addListener((ObservableValue<? extends Number> ov, Number t, Number t1)
+                -> selectPreset(t1.intValue()));
+        rateSlider.valueProperty().addListener((ObservableValue<? extends Number> ov, Number t, Number t1) -> {
+            if (musicController.getCurrent() != null) {
+                musicController.setRate(t1.doubleValue());
             }
         });
-        rateSlider.valueProperty().addListener(new ChangeListener<Number>() {
-            @Override
-            public void changed(ObservableValue<? extends Number> ov, Number t, Number t1) {
-                if (musicController.getCurrent() != null) {
-                    musicController.setRate(t1.doubleValue());
-                }
-            }
-        });
-        balanceSlider.valueProperty().addListener(new ChangeListener<Number>() {
-
-            @Override
-            public void changed(ObservableValue<? extends Number> ov, Number t, Number t1) {
-                if (musicController.getCurrent() != null) {
-                    musicController.setBalance(t1.doubleValue());
-                }
+        balanceSlider.valueProperty().addListener((ObservableValue<? extends Number> ov, Number t, Number t1) -> {
+            if (musicController.getCurrent() != null) {
+                musicController.setBalance(t1.doubleValue());
             }
         });
         volSlider.setMax(1);
         volSlider.setValue(1);
-        volSlider.valueProperty().addListener(new ChangeListener<Number>() {
-            @Override
-            public void changed(ObservableValue<? extends Number> ov, Number t, Number t1) {
-                if (musicController.getCurrent() != null) {
-                    musicController.setVolume(t1.doubleValue());
-
-                }
+        volSlider.valueProperty().addListener((ObservableValue<? extends Number> ov, Number t, Number t1) -> {
+            if (musicController.getCurrent() != null) {
+                musicController.setVolume(t1.doubleValue());
+                
             }
         });
 //        seek.setMax(1);
 //        seeker.progressProperty().bind(seekSlider.valueProperty());
-        seeker.progressProperty().addListener(new ChangeListener<Number>() {
-            @Override
-            public void changed(ObservableValue<? extends Number> ov, Number t, Number time1) {
-//                Util.err(t1.doubleValue());
-
-                if (setSeeker) {
-                    startTime.setText(musicController.getPositionAsString());
-                    seekSlider.setValue(musicController.getPosition());
-                }
+        seeker.progressProperty().addListener((ObservableValue<? extends Number> ov, Number t, Number time1) -> {
+            if (setSeeker) {
+                startTime.setText(musicController.getPositionAsString());
+                seekSlider.setValue(musicController.getPosition());
             }
         });
 //        seekSlider.setMin(0);
-        seekSlider.valueProperty().addListener(new ChangeListener<Number>() {
-            @Override
-            public void changed(ObservableValue<? extends Number> ov,
-                    Number old_val, Number new_val) {
-                if (!setSeeker) {
-                    startTime.setText(Util.timeToString((new_val.floatValue())));
-                }
+        seekSlider.valueProperty().addListener((ObservableValue<? extends Number> ov, Number old_val, Number new_val) -> {
+            if (!setSeeker) {
+                startTime.setText(Util.timeToString((new_val.floatValue())));
             }
         });
         shuffleButton.setDefaultButton(shuffle);
     }
-
+    
     private void initiateTable() {
         musicTable.getColumns().addAll(util.initColumns());
         musicTable.setItems(playlistData.get(0).getSongs());
         musicTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-        musicTable.setOnMouseClicked(new EventHandler<MouseEvent>() { //playing song from table
-            @Override
-            public void handle(MouseEvent t) {
-                if (t.getButton().equals(MouseButton.PRIMARY) && t.getClickCount() > 1 && musicTable.getItems().size() > 0 && musicTable.getSelectionModel().getSelectedItem() != null) {
-                    musicTable.setDisable(true);
-                    play((Song) musicTable.getSelectionModel().getSelectedItem());
-//removed try catch
-                }
+        musicTable.setOnMouseClicked((MouseEvent t) -> {
+            if (t.getButton().equals(MouseButton.PRIMARY) && t.getClickCount() > 1 && musicTable.getItems().size() > 0 && musicTable.getSelectionModel().getSelectedItem() != null) {
+                musicTable.setDisable(true);
+                play((Song) musicTable.getSelectionModel().getSelectedItem());
             }
         });
-        musicTable.setOnDragDetected(new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent t) {
-                Dragboard db = musicTable.startDragAndDrop(TransferMode.ANY);
+        musicTable.setOnDragDetected((MouseEvent t) -> {
+            Dragboard db = musicTable.startDragAndDrop(TransferMode.ANY);
 //                util.write(t.getSource().toString());
-                ClipboardContent content = new ClipboardContent();
-                if (musicTable.getSelectionModel().getSelectedItem() != null) {
-                    content.putString("songs");
-                    db.setContent(content);
-                }
-                t.consume();
+            ClipboardContent content = new ClipboardContent();
+            if (musicTable.getSelectionModel().getSelectedItem() != null) {
+                content.putString("songs");
+                db.setContent(content);
             }
+            t.consume();
         });
-        musicTable.setOnDragOver(new EventHandler<DragEvent>() {
-            @Override
-            public void handle(DragEvent event) {
-                Dragboard db = event.getDragboard();
-                if (db.hasFiles()) {
-                    event.acceptTransferModes(TransferMode.LINK);
-                } else {
-                    event.consume();
-                }
-            }
-        });
-        musicTable.setOnKeyPressed(new EventHandler<KeyEvent>() {
-            @Override
-            public void handle(KeyEvent t) {
-                if (t.getCode().equals(KeyCode.DELETE) && musicTable.getSelectionModel().getSelectedItem() != null) {
-                    Util.err("Removing " + musicTable.getSelectionModel().getSelectedItems().size() + "songs");
-                    int from = (int) musicTable.getSelectionModel().getSelectedIndices().get(0);
-                    int to = from + ((int) musicTable.getSelectionModel().getSelectedIndices().size());
-                    Util.err("From: " + from + " to: " + to);
-                    musicTable.getItems().remove(from, to);
-                    musicTable.getSelectionModel().clearSelection();
-                    updateItemCount();
-                } else if (t.getCode().equals(KeyCode.SPACE)) {
-                    actionPause();
-                }
-            }
-        });
-        musicTable.setOnDragDropped(new EventHandler<DragEvent>() { //importing songs
-            @Override
-            public void handle(DragEvent event) {
-                final Dragboard db = event.getDragboard();
-                if (db.hasFiles()) {
-                    AnalysisController.active = false;
-                    ModalDialog di = new ModalDialog("Importing songs", "Checking and collecting data...", null);
-                    new Thread(new FileImporter(activeController, db.getFiles(), di)).start();
-                }
-                event.setDropCompleted(true);
+        musicTable.setOnDragOver((DragEvent event) -> {
+            Dragboard db = event.getDragboard();
+            if (db.hasFiles()) {
+                event.acceptTransferModes(TransferMode.LINK);
+            } else {
                 event.consume();
             }
         });
+        musicTable.setOnKeyPressed((KeyEvent t) -> {
+            if (t.getCode().equals(KeyCode.DELETE) && musicTable.getSelectionModel().getSelectedItem() != null) {
+                Util.err("Removing " + musicTable.getSelectionModel().getSelectedItems().size() + "songs");
+                int from = (int) musicTable.getSelectionModel().getSelectedIndices().get(0);
+                int to = from + ((int) musicTable.getSelectionModel().getSelectedIndices().size());
+                Util.err("From: " + from + " to: " + to);
+                musicTable.getItems().remove(from, to);
+                musicTable.getSelectionModel().clearSelection();
+                updateItemCount();
+            } else if (t.getCode().equals(KeyCode.SPACE)) {
+                actionPause();
+            }
+        });
+        fileImportProgressIndicator.setMaxSize(150, 150);
+        fileImportVeil.setStyle("-fx-background-color: rgba(0, 0, 0, 0.4)");
+        musicTable.setOnDragDropped((DragEvent event) -> {
+            final Dragboard db = event.getDragboard();
+            if (db.hasFiles()) {
+                fileImportProgressIndicator.setVisible(true);
+                fileImportVeil.setVisible(true);
+                musicTable.setDisable(true);
+                AnalysisController.active = false;
+                FileImporter importer = new FileImporter(activeController, db.getFiles());
+                new Thread(importer).start();
+                fileImportProgressIndicator.progressProperty().bind(importer.progressProperty);
+            }
+            event.setDropCompleted(true);
+            event.consume();
+        });
+        
     }
-
+    
     private void initiatePlaylists() {
         playlists.setItems(playlistData);
         ContextMenu conMenu = new ContextMenu();
-
+        
         MenuItem delete = new MenuItem("Delete");
-        delete.setOnAction(new EventHandler<ActionEvent>() {
-
-            @Override
-            public void handle(ActionEvent t) {
-                final Playlist toDelete = ((Playlist) playlists.getSelectionModel().getSelectedItem());
-                Button yes = new Button("Yes");
-                yes.setOnAction(new EventHandler<ActionEvent>() {
-                    @Override
-                    public void handle(ActionEvent t) {
-                        ModalDialog.exit();
-                        playlists.getItems().remove(toDelete);
-                    }
-                });
-                Button no = new Button("No");
-                no.setOnAction(new EventHandler<ActionEvent>() {
-
-                    @Override
-                    public void handle(ActionEvent t) {
-                        ModalDialog.exit();
-                    }
-                });
-                List<Button> buttons = new ArrayList<>();
-                buttons.add(yes);
-                buttons.add(no);
-                new ModalDialog("Confirm deletion", "Are you sure you want to delete this playlist '"
-                        + toDelete.getName() + "'?", buttons, 350, 70);
-            }
+        delete.setOnAction((ActionEvent t) -> {
+            final Playlist toDelete = ((Playlist) playlists.getSelectionModel().getSelectedItem());
+            Button yes = new Button("Yes");
+            yes.setOnAction((ActionEvent t1) -> {
+                ModalDialog.exit();
+                playlists.getItems().remove(toDelete);
+            });
+            Button no = new Button("No");
+            no.setOnAction(Util.cancelEvent);
+            List<Button> buttons = new ArrayList<>();
+            buttons.add(yes);
+            buttons.add(no);
+            new ModalDialog("Confirm deletion", "Are you sure you want to delete this playlist '"
+                    + toDelete.getName() + "'?", buttons, 350, 70);
         });
         final TextField nameF = new TextField();
         conMenu.getItems().add(delete);
         nameF.setStyle("-fx-background-color: black;");
-        nameF.setOnKeyTyped(new EventHandler<KeyEvent>() {
-            @Override
-            public void handle(KeyEvent t) {
-                Util.err("Playlist changing name to " + nameF.getText());
-                Playlist p = ((Playlist) playlists.getSelectionModel().getSelectedItem());
-                playlistData.remove(p);
-                p.setName(nameF.getText());
-                playlistData.add(p);
-            }
+        nameF.setOnKeyTyped((KeyEvent t) -> {
+            Util.err("Playlist changing name to " + nameF.getText());
+            Playlist p = ((Playlist) playlists.getSelectionModel().getSelectedItem());
+            playlistData.remove(p);
+            p.setName(nameF.getText());
+            playlistData.add(p);
         });
         CustomMenuItem name = new CustomMenuItem(nameF);
-        nameF.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent t) {
-                nameF.requestFocus();
-            }
+        nameF.setOnAction((ActionEvent t) -> {
+            nameF.requestFocus();
         });
         name.setDisable(true);
-        conMenu.setOnShowing(new EventHandler<WindowEvent>() {
-            @Override
-            public void handle(WindowEvent t) {
-                Util.err("Showing");
-                nameF.setText(((Playlist) playlists.getSelectionModel().getSelectedItem()).getName());
-            }
+        conMenu.setOnShowing((WindowEvent t) -> {
+            Util.err("Showing");
+            nameF.setText(((Playlist) playlists.getSelectionModel().getSelectedItem()).getName());
         });
         conMenu.getItems().add(name);
         playlists.setContextMenu(conMenu);
-        playlists.setOnKeyTyped(new EventHandler<KeyEvent>() {
-            @Override
-            public void handle(KeyEvent t) {
-                if (t.getCode().equals(KeyCode.SPACE)) {
-                    Util.err("Space detected");//@TODO
-                    actionPause();
+        playlists.setOnKeyTyped((KeyEvent t) -> {
+            if (t.getCode().equals(KeyCode.SPACE)) {
+                Util.err("Space detected");//@TODO
+                actionPause();
+            }
+        });
+        playlists.setOnMouseClicked((MouseEvent t) -> {
+            if (t.getClickCount() > 1 && musicTable.getItems().size() > 0) {
+                if (musicTable.getItems().size() == 0) {
+                    musicTable.setDisable(true);
+                    play((Song) musicTable.getItems().get(Util.randInt(musicTable.getItems().size(), 0)));
                 }
             }
         });
-        playlists.setOnMouseClicked(new EventHandler<MouseEvent>() { //playing song from table
+        playlists.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<Playlist>() {
             @Override
-            public void handle(MouseEvent t) {
-                if (t.getClickCount() > 1 && musicTable.getItems().size() > 0) {
-                    if (musicTable.getItems().size() == 0) {
-                        musicTable.setDisable(true);
-                        play((Song) musicTable.getItems().get(Util.randInt(musicTable.getItems().size(), 0)));
-                    }
+            public void changed(ObservableValue<? extends Playlist> ov, Playlist old_p, Playlist new_p) {
+                if (!editing && playlistData.size() > 0) {
+                    musicTable.setItems(new_p.getSongs());
+                    items.setText("" + new_p.getSongs().size());
                 }
             }
         });
-        playlists.getSelectionModel().selectedItemProperty().addListener(
-                new ChangeListener<Playlist>() {
-                    @Override
-                    public void changed(ObservableValue<? extends Playlist> ov, Playlist old_p, Playlist new_p) {
-                        if (!editing && playlistData.size() > 0) {
-                            musicTable.setItems(new_p.getSongs());
-                            items.setText("" + new_p.getSongs().size());
-                        }
-                    }
-                });
-
+        
         playlists.setCellFactory(new Callback<ListView<Playlist>, ListCell<Playlist>>() {
             @Override
             public ListCell<Playlist> call(ListView<Playlist> l) {
@@ -456,32 +395,24 @@ public class GUIController implements Initializable, ImportListener {
                     }
                 };
                 playlists.setEditable(true);
-
-                pl.setOnDragOver(new EventHandler<DragEvent>() {
-
-                    @Override
-                    public void handle(DragEvent t) {
-                        if (t.getDragboard().getString() != null) {
-                            if (t.getDragboard().getString().equalsIgnoreCase("songs")) {
-                                t.acceptTransferModes(TransferMode.ANY);
-                            }
-
+                
+                pl.setOnDragOver((DragEvent t) -> {
+                    if (t.getDragboard().getString() != null) {
+                        if (t.getDragboard().getString().equalsIgnoreCase("songs")) {
+                            t.acceptTransferModes(TransferMode.ANY);
                         }
                     }
                 });
-                pl.setOnDragDropped(new EventHandler<DragEvent>() {
-
-                    @Override
-                    public void handle(DragEvent t) {
-                        if (pl.getItem() != null) {
-                            pl.getItem().addSong((Song) musicTable.getSelectionModel().getSelectedItem());
-                        }
+                pl.setOnDragDropped((DragEvent t) -> {
+                    if (pl.getItem() != null) {
+                        pl.getItem().addSong((Song) musicTable.getSelectionModel().getSelectedItem());
                     }
                 });
                 return pl;
             }
         });
         playlists.getSelectionModel().select(0);
+        Util.initiateTimerTask();
     }
 
     /**
@@ -490,23 +421,22 @@ public class GUIController implements Initializable, ImportListener {
      * @param song
      */
     private void play(Song song) {
+        if (trackChange.hasPrevious()) {
+            trackChange.deleteAllPast(trackChange.getPrevious());
+            trackChange.incrementPointer();
+        }
         musicController.play(song);
         trackChange.forceAddSong(song);
         trackChange.adjustPointer(song);
     }
-
+    
     public void set(Song song) {
         Main.setTitle(Util.APP_TITLE + " :: " + song.toString());
-        Util.err("Title set");
         volSlider.setValue(volume);
-        Util.err("vol set");
         seekSlider.setMax(song.getSeconds());
-        Util.err("seekslider set");
 //        seekSlider.setValue(0);
         titleField.setText(song.toString() + " - " + song.getArtist());
 //        artistField.setText(song.getArtist());
-        Util.err("titlefield set");
-//        albumField.setText(song.getAlbum());
         endTime.setText(song.getDuration());
         genreArea.setText(song.getGenre());
         pauseToggleButton.setGraphic(iPause);
@@ -526,7 +456,7 @@ public class GUIController implements Initializable, ImportListener {
             Util.log(e.getLocalizedMessage());
         }
     }
-
+    
     private void selectPreset(int idx) {
         switch (idx) {
             case 0://general
@@ -563,7 +493,7 @@ public class GUIController implements Initializable, ImportListener {
                 break;
         }
     }
-
+    
     private void setMoreInfoBox(int idx) {
         if (musicController.getCurrent() != null) {
             switch (idx) {
@@ -579,69 +509,76 @@ public class GUIController implements Initializable, ImportListener {
             }
         }
     }
-
+    
+    public TableView getMusicTable() {
+        return musicTable;
+    }
+    
     private void trackChange(boolean next) {
         if (musicController.getCurrent() == null) {
-            play((Song) musicTable.getItems().get(util.randInt(0, musicTable.getItems().size())));
+            play((Song) musicTable.getItems().get(Util.randInt(0, musicTable.getItems().size())));
         } else {
+            Song toPlay;
             if (shuffle) {
-                Song toPlay = null;
-                if (next && trackChange.isNext()) {
-                    Util.err("Next and trackchange is not null shuffle");
-                    toPlay = trackChange.getNext();
-                } else if (!next && trackChange.isPrevious()) {
-                    Util.err("Previous and trackchange is not null shuffle");
-                    toPlay = trackChange.getPrevious();
-                } else {
-                    toPlay = (Song) musicTable.getItems().get(Util.randInt(0, musicTable.getItems().size()));
-                    while (trackChange.getsongs().contains(toPlay) && Util.filterArtistContains(filters, toPlay.getArtist())) {
-                        toPlay = (Song) musicTable.getItems().get(Util.randInt(0, musicTable.getItems().size()));
-                    }
-                    Util.err("No next so shuffling");
-                }
-                Util.checkArtistFiltersAreUpdated(GUIController.filters);
-                musicController.play(toPlay);
-//                if (addSongToTrackChange) {
-                trackChange.addSong(toPlay);
-                trackChange.adjustPointer(toPlay);
-//                }
-            } else {// !shuffle
-                int i = -1;
-                if (next && !trackChange.isNext()) {
-                    Util.err("next and no next history");
-                    i = musicTable.getItems().indexOf(musicController.getCurrent()) + 1;
-                    while (Util.filterArtistContains(filters, ((Song) musicTable.getItems().get(i)).getArtist())) {
-                        i++;
-                    }
-                } else if (!next && !trackChange.isPrevious()) {
-                    Util.err("previous and no previous history");
-                    i = musicTable.getItems().indexOf(musicController.getCurrent()) - 1;
-                    while (Util.filterArtistContains(filters, ((Song) musicTable.getItems().get(i)).getArtist())) {
-                        i--;
-                    }
-                } else { //trackchange next and previous not null
-                    if (next) {
-                        Util.err("Next and trackchange is not null");
-                        musicController.play(trackChange.getNext());
+                if (next) {
+                    if (trackChange.hasNext()) {
+                        toPlay = trackChange.getNext();
+                        if (Util.filterArtistContains(filters, toPlay.getArtist())) {
+                            trackChange(true);
+                        }
                     } else {
-                        Util.err("Previous and trackchange is not null");
-                        musicController.play(trackChange.getPrevious());
+                        int i = Util.randInt(0, musicTable.getItems().size());
+                        toPlay = (Song) musicTable.getItems().get(i);
+                    }
+                } else { //previous
+                    if (trackChange.hasPrevious()) {
+                        toPlay = trackChange.getPrevious();
+                        if (Util.filterArtistContains(filters, toPlay.getArtist())) {
+                            trackChange(false);
+                        }
+                    } else {
+                        int i = Util.randInt(0, musicTable.getItems().size());
+                        while (trackChange.getsongs().contains((Song) musicTable.getItems().get(i))) {
+                            i = Util.randInt(0, musicTable.getItems().size());
+                        }
+                        toPlay = (Song) musicTable.getItems().get(i);
                     }
                 }
-                if (i != -1) {
-                    if (i < musicTable.getItems().size()) {
-                        Song toPlay = (Song) musicTable.getItems().get(i);
-                        musicController.play(toPlay);
-                        trackChange.addSong(toPlay);
-                        trackChange.adjustPointer(toPlay);
+            } else { //not shuffle
+                if (next) {
+                    if (trackChange.hasNext()) {
+                        toPlay = trackChange.getNext();
+                        if (Util.filterArtistContains(filters, toPlay.getArtist())) {
+                            trackChange(true);
+                        }
                     } else {
-                        play((Song) musicTable.getItems().get(0));
+                        int i = musicTable.getItems().indexOf(musicController.getCurrent()) + 1;
+                        while (Util.filterArtistContains(filters, ((Song) musicTable.getItems().get(i)).getArtist())) {
+                            i++;
+                        }
+                        toPlay = (Song) musicTable.getItems().get(i);
+                    }
+                } else { //previous
+                    if (trackChange.hasPrevious()) {
+                        toPlay = trackChange.getPrevious();
+                        if (Util.filterArtistContains(filters, toPlay.getArtist())) {
+                            trackChange(false);
+                        }
+                    } else {
+                        int i = musicTable.getItems().indexOf(musicController.getCurrent()) - 1;
+                        while (Util.filterArtistContains(filters, ((Song) musicTable.getItems().get(i)).getArtist())) {
+                            i++;
+                        }
+                        toPlay = (Song) musicTable.getItems().get(i);
                     }
                 }
             }
+            musicController.play(toPlay);
+            trackChange.addSong(toPlay);
+            trackChange.adjustPointer(toPlay);
         }
     }
-
+    
     @FXML
     private void actionPrev(ActionEvent event) {
         if (musicController.getPosition() > 2) {
@@ -651,7 +588,7 @@ public class GUIController implements Initializable, ImportListener {
             trackChange(false);
         }
     }
-
+    
     public void actionPause() {
         if (musicController.getCurrent() != null) {
             if (!musicController.playing) {
@@ -667,18 +604,18 @@ public class GUIController implements Initializable, ImportListener {
             }
         }
     }
-
+    
     @FXML
     public void actionPause(ActionEvent event) {
         actionPause();
     }
-
+    
     @FXML
     private void actionNext(ActionEvent event) {
 //        nextButton.setDisable(true);
         trackChange(true);
     }
-
+    
     @FXML
     private void autoAnalyse(ActionEvent v) throws InterruptedException {
         if (musicController.getCurrent() == null) {
@@ -686,47 +623,61 @@ public class GUIController implements Initializable, ImportListener {
         } else {
             Main.aC.give(musicController.getCurrent()); //give the controller the song
 
-            EventHandler<WindowEvent> ev = new EventHandler<WindowEvent>() {
-                @Override
-                public void handle(WindowEvent t) {
-                    Main.aC.reset();
-                }
+            EventHandler<WindowEvent> ev = (WindowEvent t) -> {
+                Main.aC.reset();
             };
             analyserModal = new ModalDialog(Main.analyser, ev);
             Main.aC.analyse(true, true);
         }
     }
-
+    
     @Override
-    public void songImported(Song s, ModalDialog di) {
+    public void songImported(Song s) {
         if (s != null && s.getFilepath() != null) {
-            di.setMessage("Add: " + s.getFilepath());
-            if ((playlists.getSelectionModel().getSelectedItem()) != null) {
-                ((Playlist) playlists.getSelectionModel().getSelectedItem()).addSong(s);
-            } else {
-                library.addSong(s);
-            }
+//            di.setMessage("Add: " + s.getFilepath());
+            Platform.runLater(() -> {
+                if ((playlists.getSelectionModel().getSelectedItem()) != null) {
+                    ((Playlist) playlists.getSelectionModel().getSelectedItem()).addSong(s);
+                } else {
+                    library.addSong(s);
+                }
+            });
+            
         }
     }
-
+    
     @Override
-    public void importFinished(final ModalDialog di) {
-        Platform.runLater(new Runnable() {
-            @Override
-            public void run() {
-                di.close();
-                updateItemCount();
-                Main.sC.populateFilterDropdowns(musicTable);
+    public void importFinished() {
+        Platform.runLater(() -> {
+            FadeTransition ft = new FadeTransition(Duration.millis(2000), fileImportVeil);
+            ft.setFromValue(1.0);
+            ft.setToValue(0);
+            ft.setOnFinished((ActionEvent t) -> {
+                fileImportVeil.setVisible(false);
+            });
+            FadeTransition ft2 = new FadeTransition(Duration.millis(2500), fileImportVeil);
+            ft2.setFromValue(1.0);
+            ft2.setToValue(0);
+            ft2.setOnFinished((ActionEvent t) -> {
+                fileImportProgressIndicator.setVisible(false);
+            });
+            ParallelTransition pt = new ParallelTransition(ft, ft2);
+            pt.play();
+            musicTable.setDisable(false);
+            updateItemCount();
+            for (TableColumn col : (ObservableList<TableColumn>) musicTable.getColumns()) {
+                col.setVisible(false);
+                col.setVisible(true);
             }
+            Main.sC.populateFilterDropdowns(musicTable);
         });
         AnalysisController.active = true;
-        System.gc();
     }
-
+    
     private void updateItemCount() {
         items.setText("" + musicTable.getItems().size());
     }
-
+    
     public void updateSeeker(double value) {
         seeker.setProgress(value);
 //        if (setSeeker) {
@@ -734,32 +685,27 @@ public class GUIController implements Initializable, ImportListener {
 //        }
         //t1.setText(currentSong.getPositionAsString());
     }
-
+    
     @FXML
     private void actionClose(ActionEvent ev) {
         Main.close();
     }
-
+    
     @FXML
     private void actionAutoload(ActionEvent ev) {
         autoload = !autoload;
     }
-
+    
     @FXML
     private void actionAbout(ActionEvent ev) {
         List<Button> b = new ArrayList<>();
         Button bt = new Button("OK");
-        bt.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent t) {
-                ModalDialog.exit();
-            }
-        });
+        bt.setOnAction(Util.cancelEvent);
         b.add(bt);
-
+        
         new ModalDialog("About", "Music Player \n'Cobble Player' \n(C) 2014 Jacob Moss", b, 150, 90);
     }
-
+    
     @FXML
     private void actionReportBug(ActionEvent ev) {
         String url = "http://cobbles.biz.ht/downloads.php?id=cobblePlayer#one";
@@ -767,12 +713,12 @@ public class GUIController implements Initializable, ImportListener {
         if (desktop != null && desktop.isSupported(Desktop.Action.BROWSE)) {
             try {
                 desktop.browse(URI.create(url));
-            } catch (Exception e) {
-                e.printStackTrace();
+            } catch (IOException e) {
+                Util.log(e.getLocalizedMessage());
             }
         }
     }
-
+    
     @FXML
     private void actionJumpToCurrent(ActionEvent e) {
         if (musicController.getCurrent() != null) {
@@ -781,28 +727,30 @@ public class GUIController implements Initializable, ImportListener {
             musicTable.scrollTo(idx);
         }
     }
-
+    
     @FXML
     private void actionResetEqualizer(ActionEvent e) {
         for (Slider s : sliders) {
             s.setValue(0);
         }
     }
-
+    
     @FXML
     private void actionResetRate(ActionEvent e) {
         rateSlider.setValue(1);
-        for (Song s : trackChange.getsongs()) {
-            Util.err(s.toString());
-        }
+        trackChange.getsongs().stream().forEach((s)
+                -> Util.err(s.toString()));
         Util.err("Pointer: " + trackChange.getPointer());
+        for (Object o : musicTable.getItems()) {
+            System.err.println(((TableColumn) musicTable.getColumns().get(0)).getCellData(o));
+        }
     }
-
+    
     @FXML
     private void actionResetBalance(ActionEvent e) {
         balanceSlider.setValue(0);
     }
-
+    
     @FXML
     private void actionQuickfix(ActionEvent e) {
         musicController.stop();
@@ -810,12 +758,12 @@ public class GUIController implements Initializable, ImportListener {
         nextButton.setDisable(false);
         previousButton.setDisable(false);
     }
-
+    
     @FXML
     private void actionNewPlaylist(ActionEvent ev) {
         playlistData.add(new Playlist("New playlist", null));
     }
-
+    
     boolean edit2 = false;
 
 //    @FXML
@@ -844,20 +792,12 @@ public class GUIController implements Initializable, ImportListener {
         final Playlist delete = (Playlist) playlists.getSelectionModel().getSelectedItem();
         if (delete != null) {
             Button yes = new Button("Confirm");
-            yes.setOnAction(new EventHandler<ActionEvent>() {
-                @Override
-                public void handle(ActionEvent t) {
-                    playlistData.remove(delete);
-                    ModalDialog.exit();
-                }
+            yes.setOnAction((ActionEvent t) -> {
+                playlistData.remove(delete);
+                ModalDialog.exit();
             });
             Button cancel = new Button("Cancel");
-            cancel.setOnAction(new EventHandler<ActionEvent>() {
-                @Override
-                public void handle(ActionEvent t) {
-                    ModalDialog.exit();
-                }
-            });
+            cancel.setOnAction(Util.cancelEvent);
             List<Button> buttons = new ArrayList<>();
             buttons.add(yes);
             buttons.add(cancel);
@@ -865,21 +805,21 @@ public class GUIController implements Initializable, ImportListener {
                     + "the playlist '" + delete.getName() + "'?",
                     buttons, 200, 70);
         }
-
+        
     }
-
+    
     @FXML
     private void actionShuffleToggle() {
         shuffle = !shuffle;
         shuffleButton.setDefaultButton(shuffle);
     }
-
+    
     @FXML
     private void actionRepeatToggle(ActionEvent ev) {
         repeat = !repeat;
         repeatButton.setDefaultButton(repeat);
     }
-
+    
     @FXML
     private void actionSettings(ActionEvent ig) {
         Properties prop = Util.openProp(Util.CONFIG_FILENAME);
@@ -888,25 +828,18 @@ public class GUIController implements Initializable, ImportListener {
         Main.sC.SAutoload.setSelected(au.equals("true"));
         Main.sC.SShow.setSelected(sh.equals("true"));
         Main.sC.samplesField.setText(samples + "");
-        EventHandler<WindowEvent> ev = new EventHandler<WindowEvent>() {
-            @Override
-            public void handle(WindowEvent t) {
-                Main.saveConfig();
-            }
+        EventHandler<WindowEvent> ev = (WindowEvent t) -> {
+            Main.saveConfig();
         };
         settingsModal = new ModalDialog(Main.settings, ev);
         settingsModal.setTitle("Settings");
-
     }
-
+    
     @FXML
     private void actionAnalyser(ActionEvent ig) {
         Main.aC.analyse.setDisable(false);
-        EventHandler<WindowEvent> ev = new EventHandler<WindowEvent>() {
-            @Override
-            public void handle(WindowEvent t) {
-                Main.aC.reset();
-            }
+        EventHandler<WindowEvent> ev = (WindowEvent t) -> {
+            Main.aC.reset();
         };
         analyserModal = new ModalDialog(Main.analyser, ev);
         analyserModal.setTitle("Analyser");
@@ -925,23 +858,22 @@ public class GUIController implements Initializable, ImportListener {
 //        seekSlider.valueProperty().unbind();
 //        seek.valueProperty().unbind();
     }
-
+    
     @FXML
     private void sliderMouseExit(MouseEvent ev) {
         musicController.seek(seekSlider.getValue());
         setSeeker = true;
     }
 
-    public static void resetMusicSplitPane() {
-        musicSplitPane.setDividerPosition(0, 0.7);
-        Util.err("height changed");
-    }
-
-    public static void resetMainSplitPane() {
-        Util.err("width changed");
+//    public static void resetMusicSplitPane() {
+//        musicSplitPane.setDividerPosition(0, 0.7);
+////        Util.err("height changed");
+//    }
+    public void resetMainSplitPane() {
+//        Util.err("width changed");
         mainSplitPane.setDividerPosition(0, 0.22);
     }
-
+    
     public void songEnded() {
         util.write("Song ended");
         if (repeat) {
@@ -950,23 +882,19 @@ public class GUIController implements Initializable, ImportListener {
             trackChange(true);
         }
     }
-
+    
     @Deprecated
     public void updateTimes(final String cur) {
-        Platform.runLater(new Runnable() {
-            @Override
-            public void run() {
-                startTime.setText(cur);
-            }
+        Platform.runLater(() -> {
+            startTime.setText(cur);
         });
     }
-
-    public static List<Playlist> getPlaylists() {
+    
+    public List<Playlist> getPlaylists() {
         return playlistData;
     }
-
-    public static void setPlaylists(List<Playlist> playlists) {
+    
+    public void setPlaylists(List<Playlist> playlists) {
         importList = playlists;
     }
-
 }

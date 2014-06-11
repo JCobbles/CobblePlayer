@@ -33,6 +33,9 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.ResourceBundle;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.application.Preloader;
@@ -49,8 +52,10 @@ import javafx.fxml.FXMLLoader;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.TabPane;
 import javafx.scene.image.Image;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.Pane;
 import javafx.stage.Modality;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -70,7 +75,8 @@ public class Main extends Application {
     public static Scene analyser;
     public static SettingsController sC;
     public static AnalysisController aC;
-    private static URL analysisResource;
+    public static GUIController guiController;
+    private static URL analysisResource, settingsResource, guiResource;
     public static PerformanceTracker perfTracker;
     BooleanProperty ready = new SimpleBooleanProperty(false);
     private final static String versionURL = "http://cobbles.biz.ht/updates/cobblePlayer/version.html";
@@ -126,6 +132,7 @@ public class Main extends Application {
                 boolean shuffle = false;
                 for (int i = 1; i <= max; i++) {
                     if (i == 1) { //check for updates @TODO
+                        Logger.getLogger("org.jaudiotagger").setLevel(Level.OFF);
                         Util.DEBUG = true;
                         if (Integer.parseInt(getLatestVersion()) > Util.CURRENT_VERSION) {
                             Util.err("Outdated version...");
@@ -153,7 +160,7 @@ public class Main extends Application {
 
                     } else if (i == 2) { //
                         Util.err("i == 2, loading analysis resource");
-                        analysisResource = getClass().getResource("/resources/analyser.fxml");
+
                         stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
                             @Override
                             public void handle(final WindowEvent e) {
@@ -163,8 +170,9 @@ public class Main extends Application {
                         });
                         notifyPreloader(new Preloader.ErrorNotification("CHANGE_MESSAGE", "Loading settings...", null));
                     } else if (i == 3) { //load settings
-                        System.err.println("i == 3, loading settings");
+                        Util.err("i == 3, loading previous session");
                         try {
+                            Logger.getLogger("org.jaudiotagger").setLevel(Level.OFF);
                             Properties prop = new Properties();
                             prop.load(new FileInputStream(Util.CONFIG_FILENAME));
                             if (prop.getProperty("autoload") != null) {
@@ -175,6 +183,7 @@ public class Main extends Application {
                                         String line;
                                         Playlist curp = null;
                                         while ((line = br.readLine()) != null) {
+
                                             if (!line.isEmpty() && !line.equals("") && !line.equals(Util.END_CODE)) {
 //                                                Util.err("Line: " + line);
                                                 if (line.contains(Util.NEW_BIT_CODE)) {
@@ -189,7 +198,7 @@ public class Main extends Application {
                                                     try {
                                                         curp.addSongUnimported(line);
                                                     } catch (IOException e) {
-                                                        Util.err(e.getLocalizedMessage());
+//                                                        Util.err(e.getLocalizedMessage());
                                                     }
                                                 }
                                             } else if (line.equals(Util.END_CODE)) {
@@ -198,7 +207,7 @@ public class Main extends Application {
                                         }
                                         br.close();
                                         System.err.println("Adding " + playlists.size() + " playlists...");
-                                        GUIController.setPlaylists(playlists);
+                                        addPlaylists(playlists);
                                     } catch (IOException e) {
                                         Util.err(e.getLocalizedMessage());
                                     }
@@ -217,49 +226,15 @@ public class Main extends Application {
                         System.err.println("i == 4, loading GUI");
 //                        notifyPreloader(new Preloader.ErrorNotification("CHANGE_MESSAGE", "Loading past session...", null));
                         try {
-                            //gui
-                            final FXMLLoader load = new FXMLLoader(getClass().getResource("/resources/GUI.fxml"));
-                            final GUIController guiController = new GUIController();
-                            load.setController(guiController);
-                            //settings
-                            final FXMLLoader load2 = new FXMLLoader(getClass().getResource("/resources/settings.fxml"));
-                            sC = new SettingsController();
-                            load2.setController(sC);
-
-                            //analyser
-                            final FXMLLoader load3 = new FXMLLoader(analysisResource);
-                            aC = new AnalysisController();
-                            load3.setController(aC);
 
                             GUIController.show = sQM;
                             GUIController.samples = samples;
                             GUIController.shuffle = shuffle;
-
-//            System.err.println(GUIController.getPlaylists().get(0).getName());
 //            GUIController.importFiles(songList);
                             Platform.runLater(new Runnable() {
                                 @Override
                                 public void run() {
-                                    try {
-                                        settings = new Scene((AnchorPane) load2.load());
-                                        analyser = new Scene((AnchorPane) load3.load());
-                                        scene = new Scene((AnchorPane) load.load());
-                                        stage.setScene(scene);
-                                        scene.widthProperty().addListener(new ChangeListener<Number>() {
-                                            @Override
-                                            public void changed(ObservableValue<? extends Number> observableValue, Number oldSceneWidth, Number newSceneWidth) {
-                                                GUIController.resetMainSplitPane();
-                                            }
-                                        });
-                                        scene.heightProperty().addListener(new ChangeListener<Number>() {
-                                            @Override
-                                            public void changed(ObservableValue<? extends Number> observableValue, Number oldSceneHeight, Number newSceneHeight) {
-                                                GUIController.resetMusicSplitPane();
-                                            }
-                                        });
-                                    } catch (IOException ex) {
-                                        Util.err(ex.getLocalizedMessage());
-                                    }
+
                                 }
                             });
                             Screen screen = Screen.getPrimary();
@@ -271,12 +246,13 @@ public class Main extends Application {
                             stage.getIcons().add(new Image(Main.class.getResourceAsStream("/resources/favicon.png")));
                             stage.setTitle(APP_TITLE);
 //                            stage.show();
-                            perfTracker = PerformanceTracker.getSceneTracker(scene);
+//                            perfTracker = PerformanceTracker.getSceneTracker(scene);
 
                             System.err.println("Loaded GUI");
                         } catch (NullPointerException ex) {
                             //No point in continuing if scene is not found/loaded
                             Util.err(ex.getLocalizedMessage());
+                            ex.printStackTrace();
                         }
                     }
                     // Send progress to preloader
@@ -295,26 +271,63 @@ public class Main extends Application {
         };
         new Thread(task).start();
     }
+    private List<Playlist> playlists;
 
     @Override
     public void start(Stage primaryStage) {
-        this.stage = primaryStage;
 
-        ready.addListener(new ChangeListener<Boolean>() {
-            public void changed(
-                    ObservableValue<? extends Boolean> ov, Boolean t, Boolean t1) {
-                if (Boolean.TRUE.equals(t1)) {
-                    Platform.runLater(new Runnable() {
-                        public void run() {
-                            stage.show();
+        this.stage = primaryStage;
+        analysisResource = getClass().getResource("/resources/analyser.fxml");
+        settingsResource = getClass().getResource("/resources/settings.fxml");
+        guiResource = getClass().getResource("/resources/GUI2.fxml");
+        ready.addListener((ObservableValue<? extends Boolean> ov, Boolean t, Boolean t1) -> {
+            if (Boolean.TRUE.equals(t1)) {
+                Platform.runLater(() -> {
+                    try {
+                        //analyser
+                        final FXMLLoader analysisLoader = new FXMLLoader(analysisResource);
+                        aC = new AnalysisController();
+                        analysisLoader.setController(aC);
+                        //settings
+                        final FXMLLoader settingsLoader = new FXMLLoader(settingsResource);
+                        sC = new SettingsController();
+                        settingsLoader.setController(sC);
+                        //gui
+                        final FXMLLoader load = new FXMLLoader(guiResource);
+                        guiController = new GUIController();
+                        load.setController(guiController);
+                        analyser = new Scene((AnchorPane) analysisLoader.load());
+                        settings = new Scene((AnchorPane) settingsLoader.load());
+                        scene = new Scene((AnchorPane) load.load());
+                        stage.setScene(scene);
+                        scene.widthProperty().addListener((ObservableValue<? extends Number> observableValue, Number oldSceneWidth, Number newSceneWidth) -> {
+                            guiController.resetMainSplitPane();
+                        });
+                        if (playlists != null) {
+                            guiController.setPlaylists(playlists);
+                            guiController.addPreviousSongs.set(true);
                         }
-                    });
-                }
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                        Util.err(ex.getLocalizedMessage());
+                    }
+                    stage.show();
+                });
             }
         });
+//            final FXMLLoader load = new FXMLLoader(getClass().getResource("/resources/GUI2.fxml"));
+//          
+//            final GUIController guiController = new GUIController();
+//            load.setController(guiController);
+//            scene = new Scene((AnchorPane) load.load());
+//            stage.setScene(scene);
         startup();
+
     }
 
+    private void addPlaylists(List<Playlist> playlists) {
+        this.playlists = playlists;
+    }
 //    public static void reloadAC() {
 //        try {
 //            FXMLLoader l = new FXMLLoader(analysisResource);
@@ -324,6 +337,7 @@ public class Main extends Application {
 //            Util.log(ex);
 //        }
 //    }
+
     public static void close() {
         if (GUIController.show) {
             Button yes = new Button("Yes");
@@ -370,8 +384,8 @@ public class Main extends Application {
         Properties prop = new Properties();
         try {
             if (GUIController.autoload) {
-                PlaylistHolder hold = new PlaylistHolder(GUIController.getPlaylists());
-                Util.err("Saving...\n" + GUIController.getPlaylists().size() + " playlist(s) saved");
+                PlaylistHolder hold = new PlaylistHolder(guiController.getPlaylists());
+                Util.err("Saving...\n" + guiController.getPlaylists().size() + " playlist(s) saved");
                 prop.setProperty("autoload", "true");
             } else {
                 prop.setProperty("autoload", "false");

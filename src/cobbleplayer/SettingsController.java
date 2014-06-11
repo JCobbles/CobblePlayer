@@ -40,11 +40,11 @@ public class SettingsController implements Initializable {
     public static int FILTER_TAB = 2;
     private List<Song> songsAdded = new ArrayList<>();
     @FXML
-    CheckBox SShow, SAutoload;
+    CheckBox SShow, SAutoload, enableRemoveButton;
     @FXML
-    static TableView filterArtistTable;
+    TableView filterArtistTable;
     @FXML
-    ComboBox<String> filterArtistDropdown;
+    ComboBox filterArtistDropdown; //<String>
     @FXML
     ComboBox filterArtistPeriodDropdown;
     @FXML
@@ -57,6 +57,12 @@ public class SettingsController implements Initializable {
     public void populateFilterDropdowns(TableView musicTable) {
         songsAdded.clear();
         for (Song s : (ObservableList<Song>) musicTable.getItems()) {
+            if (filterArtistDropdown == null) {
+                Util.err("drop down null");
+            }
+            if (s == null) {
+                Util.err("song null");
+            }
             if (!filterArtistDropdown.getItems().contains(s.getArtist())) {
                 filterArtistDropdown.getItems().add(s.getArtist());
                 songsAdded.add(s);
@@ -64,12 +70,9 @@ public class SettingsController implements Initializable {
         }
     }
 
-    public static void resetItems() {
-        filterArtistTable.setItems(GUIController.filters);
-    }
-    
     @Override
     public void initialize(URL url, ResourceBundle rb) {
+        filterArtistTable.setItems(GUIController.filters);
         ((TableColumn) filterArtistTable.getColumns().get(0)).setCellValueFactory(new Callback<TableColumn.CellDataFeatures<ArtistFilterItem, String>, ObservableValue<String>>() {
             @Override
             public ObservableValue<String> call(TableColumn.CellDataFeatures<ArtistFilterItem, String> p) {
@@ -136,7 +139,7 @@ public class SettingsController implements Initializable {
         filterArtistAdd.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent t) {
-                String chosenArtist = filterArtistDropdown.getSelectionModel().getSelectedItem();
+                String chosenArtist = (String) filterArtistDropdown.getSelectionModel().getSelectedItem();
                 int index = filterArtistDropdown.getSelectionModel().getSelectedIndex();
                 Object chosenTime = filterArtistPeriodDropdown.getSelectionModel().getSelectedItem();
                 if (chosenArtist == null || chosenTime == null) {
@@ -176,7 +179,7 @@ public class SettingsController implements Initializable {
                             filtersWriter.newLine();
                             filtersWriter.close();
                             ArtistFilterItem filter = new ArtistFilterItem(songsAdded.get(index), periodInMillis, chosenTime.toString());
-                            filterArtistTable.getItems().add(filter);
+//                            filterArtistTable.getItems().add(filter);
                             GUIController.filters.add(filter);
                         } catch (IOException ex) {
                             Util.err(ex.getLocalizedMessage());
@@ -187,7 +190,7 @@ public class SettingsController implements Initializable {
                             filtersWriter.write(Util.NEW_BIT_CODE + chosenArtist);
                             filtersWriter.newLine();
                             filtersWriter.close();
-                            filterArtistTable.getItems().add(new ArtistFilterItem(songsAdded.get(index), -1, "Indefinite"));
+                            GUIController.filters.add(new ArtistFilterItem(songsAdded.get(index), -1, "Indefinite"));
                         } catch (IOException ex) {
                             Util.err(ex.getLocalizedMessage());
                         }

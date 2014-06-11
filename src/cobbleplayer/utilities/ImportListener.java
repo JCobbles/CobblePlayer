@@ -13,6 +13,6 @@ import cobbleplayer.Song;
  */
 public interface ImportListener {
 
-    void songImported(Song s, ModalDialog di);
-    void importFinished(ModalDialog di);
+    void songImported(Song s);
+    void importFinished();
 }

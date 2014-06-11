@@ -92,7 +92,8 @@ public class Playlist {
             addSong(new Song(Util.getTitle(file), Util.getArtist(file),
                     file.getAbsolutePath(), Util.getDurationAsString(file),
                     Util.getAlbum(file), Util.getDuration(file)));
-        } catch (TagException e) {
+        } catch (IOException e) {
+//            e.printStackTrace();
             String current = file.getName();
             Util.print("Error getting properties from: " + current);
             Song s = new Song(current, "-", current, "-", "-", 0);

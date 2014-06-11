@@ -56,7 +56,7 @@ public class SeekTask extends Task<Void> {
     @Override
     protected Void call() throws Exception {
 
-        timer.scheduleAtFixedRate(task, 0, 900);
+        timer.scheduleAtFixedRate(task, 0, 600);
         return null;
     }
 

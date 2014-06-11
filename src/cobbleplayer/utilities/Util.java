@@ -21,6 +21,7 @@ import cobbleplayer.GUIController;
 import cobbleplayer.Main;
 import cobbleplayer.SettingsController;
 import cobbleplayer.Song;
+import cobbleplayer.UpdateTask;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
@@ -36,8 +37,11 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
@@ -54,13 +58,17 @@ import javafx.stage.Window;
 import javafx.util.Callback;
 import javax.sound.sampled.AudioFileFormat;
 import javazoom.spi.mpeg.sampled.file.MpegAudioFileReader;
-import org.farng.mp3.MP3File;
-import org.farng.mp3.TagException;
+import org.jaudiotagger.audio.AudioFile;
+import org.jaudiotagger.audio.AudioFileIO;
+import org.jaudiotagger.audio.exceptions.CannotReadException;
+import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
+import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
+import org.jaudiotagger.tag.FieldKey;
+import org.jaudiotagger.tag.Tag;
+import org.jaudiotagger.tag.TagException;
 
 /*
- * Just some utility methods 
- */
-/**
+ * utility methods 
  *
  * @author Jacob Moss
  */
@@ -68,7 +76,6 @@ public class Util {
 
     private static Random r = new Random();
     private static Label notifArea;
-    private static MP3File file;
     public static boolean DEBUG;
     private static PrintWriter log;
     public static final Button buttonNo;
@@ -85,11 +92,8 @@ public class Util {
     public final static int CURRENT_VERSION = 2;
 
     static {
-        cancelEvent = new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent t) {
-                ModalDialog.exit();
-            }
+        cancelEvent = (ActionEvent t) -> {
+            ModalDialog.exit();
         };
         buttonNo = new Button("No");
         buttonNo.setOnAction(cancelEvent);
@@ -132,14 +136,16 @@ public class Util {
     }
 
     public static void initiateTimerTask() {
-        Timer t = new Timer();
         TimerTask task = new TimerTask() {
             @Override
             public void run() {
-                
+                Util.checkSongFiltersAreUpdated(GUIController.filters);
             }
         };
-        t.scheduleAtFixedRate(task, 0, 600000);
+        UpdateTask updater = new UpdateTask(task);
+        Thread updateThread = new Thread(updater);
+        updateThread.setName("updateThread");
+        updateThread.start();
     }
 
     public static void checkArtistFiltersAreUpdated(List<SettingsController.ArtistFilterItem> list) {
@@ -154,7 +160,6 @@ public class Util {
         for (SettingsController.ArtistFilterItem item : deletionList) {
             GUIController.filters.remove(item);
         }
-        SettingsController.resetItems();
     }
 
     public static void checkSongFiltersAreUpdated(List<SettingsController.ArtistFilterItem> list) {
@@ -166,49 +171,115 @@ public class Util {
     public static boolean filterArtistContains(List<SettingsController.ArtistFilterItem> list, String artist) {
         for (SettingsController.ArtistFilterItem filter : list) {
             if (filter.artist.equals(artist)) {
+                err(filter.artist);
                 return true;
             }
         }
         return false;
     }
 
-    public static String getTitle(File input) throws TagException, IOException {
-        if (!input.exists()) {
-            log("!input.exists()" + input.getAbsolutePath());
-        }
-        file = new MP3File(input);
-        if (file.hasID3v2Tag() && !file.getID3v2Tag().getSongTitle().isEmpty()) {
-            return file.getID3v2Tag().getSongTitle().replaceAll("[^A-Za-z0-9'\\p{M}\\- ]", "");
-        } else if (file.hasID3v1Tag() && !file.getID3v1Tag().getSongTitle().isEmpty()) {
-            return file.getID3v1Tag().getSongTitle().replaceAll("[^A-Za-z0-9'\\p{M}\\- ]", "");
-        } else {
-            return input.getName().isEmpty() ? input.getName() : "-";
+    public static String getTitle(File input) {
+        try {
+            if (!input.exists()) {
+                log("!input.exists()" + input.getAbsolutePath());
+            }
+            AudioFile f = AudioFileIO.read(input);
+            Tag tag = f.getTag();
+            
+            if (tag.hasField(FieldKey.TITLE)) {
+                return tag.getFirst(FieldKey.TITLE);
+            } else {
+                return "-";
+            }
+//        if (file.hasID3v2Tag() && !file.getID3v2Tag().getSongTitle().isEmpty()) {
+//            return file.getID3v2Tag().getSongTitle().replaceAll("[^A-Za-z0-9'\\p{M}\\- ]", "");
+//        } else if (file.hasID3v1Tag() && !file.getID3v1Tag().getSongTitle().isEmpty()) {
+//            return file.getID3v1Tag().getSongTitle().replaceAll("[^A-Za-z0-9'\\p{M}\\- ]", "");
+//        } else {
+//            return input.getName().isEmpty() ? input.getName() : "-";
+//        }
+        } catch (CannotReadException | IOException | TagException | ReadOnlyFileException | InvalidAudioFrameException ex) {
+//          ex.printStackTrace();
+          return "-";
         }
 
     }
 
-    public static String getArtist(File input) throws IOException, TagException {
-        file = new MP3File(input);
-        if (file.hasID3v2Tag() && !file.getID3v2Tag().getLeadArtist().isEmpty()) {
-            return file.getID3v2Tag().getLeadArtist().replaceAll("[^A-Za-z0-9'\\p{M}\\- ]", "");
-        } else if (file.hasID3v1Tag() && !file.getID3v1Tag().getLeadArtist().isEmpty()) {
-            return file.getID3v1Tag().getLeadArtist().replaceAll("[^A-Za-z0-9'\\p{M}\\- ]", "");
-        } else {
-            return input.getName().isEmpty() ? input.getName() : "-";
+    public static String getArtist(File input) {
+        try {
+            if (!input.exists()) {
+                log("!input.exists()" + input.getAbsolutePath());
+            }
+            AudioFile f = AudioFileIO.read(input);
+            Tag tag = f.getTag();
+            
+            if (tag.hasField(FieldKey.ARTIST)) {
+                String all = "";
+                if (tag.getAll(FieldKey.ARTIST).size() > 1) {
+                    for (String s : tag.getAll(FieldKey.ARTIST)) {
+                        all += s + ";";
+                    }
+                }
+                all = tag.getFirst(FieldKey.ARTIST);
+                return all;
+            } else {
+                return "-";
+            }
+//        if (file.hasID3v2Tag() && !file.getID3v2Tag().getSongTitle().isEmpty()) {
+//            return file.getID3v2Tag().getSongTitle().replaceAll("[^A-Za-z0-9'\\p{M}\\- ]", "");
+//        } else if (file.hasID3v1Tag() && !file.getID3v1Tag().getSongTitle().isEmpty()) {
+//            return file.getID3v1Tag().getSongTitle().replaceAll("[^A-Za-z0-9'\\p{M}\\- ]", "");
+//        } else {
+//            return input.getName().isEmpty() ? input.getName() : "-";
+//        }
+        } catch (CannotReadException | IOException | TagException | ReadOnlyFileException | InvalidAudioFrameException ex) {
+//          ex.printStackTrace();
+          return "-";
         }
+//        file = new MP3File(input);
+//        if (file.hasID3v2Tag() && !file.getID3v2Tag().getLeadArtist().isEmpty()) {
+//            return file.getID3v2Tag().getLeadArtist().replaceAll("[^A-Za-z0-9'\\p{M}\\- ]", "");
+//        } else if (file.hasID3v1Tag() && !file.getID3v1Tag().getLeadArtist().isEmpty()) {
+//            return file.getID3v1Tag().getLeadArtist().replaceAll("[^A-Za-z0-9'\\p{M}\\- ]", "");
+//        } else {
+//            return input.getName().isEmpty() ? input.getName() : "-";
+//        }
 
     }
 
-    public static String getAlbum(File input) throws IOException, TagException {
-        file = new MP3File(input);
-        if (file.hasID3v2Tag() && !file.getID3v2Tag().getAlbumTitle().isEmpty()) {
-            return file.getID3v2Tag().getAlbumTitle().replaceAll("[^A-Za-z0-9'é ]", "");
-        } else if (file.hasID3v1Tag() && !file.getID3v1Tag().getAlbumTitle().isEmpty()) {
-            return file.getID3v1Tag().getAlbumTitle().replaceAll("[^A-Za-z0-9'é ]", "");
-        } else {
-            return input.getName().isEmpty() ? input.getName() : "-";
+    public static String getAlbum(File input) throws IOException {
+        try {
+            if (!input.exists()) {
+                log("!input.exists()" + input.getAbsolutePath());
+            }
+            AudioFile f = AudioFileIO.read(input);
+            Tag tag = f.getTag();
+            if (tag.hasField(FieldKey.ALBUM)) {
+                return tag.getFirst(FieldKey.ALBUM);
+                
+            } else {
+                return "-";
+            }
+//        if (file.hasID3v2Tag() && !file.getID3v2Tag().getSongTitle().isEmpty()) {
+//            return file.getID3v2Tag().getSongTitle().replaceAll("[^A-Za-z0-9'\\p{M}\\- ]", "");
+//        } else if (file.hasID3v1Tag() && !file.getID3v1Tag().getSongTitle().isEmpty()) {
+//            return file.getID3v1Tag().getSongTitle().replaceAll("[^A-Za-z0-9'\\p{M}\\- ]", "");
+//        } else {
+//            return input.getName().isEmpty() ? input.getName() : "-";
+//        }
+        } catch (CannotReadException | IOException | TagException | ReadOnlyFileException | InvalidAudioFrameException ex) {
+//          ex.printStackTrace();
+          return "-";
         }
 
+//        file = new MP3File(input);
+//        if (file.hasID3v2Tag() && !file.getID3v2Tag().getAlbumTitle().isEmpty()) {
+//            return file.getID3v2Tag().getAlbumTitle().replaceAll("[^A-Za-z0-9'é ]", "");
+//        } else if (file.hasID3v1Tag() && !file.getID3v1Tag().getAlbumTitle().isEmpty()) {
+//            return file.getID3v1Tag().getAlbumTitle().replaceAll("[^A-Za-z0-9'é ]", "");
+//        } else {
+//            return input.getName().isEmpty() ? input.getName() : "-";
+//        }
     }
 
     public static int getDuration(File file) {
@@ -220,7 +291,7 @@ public class Util {
             return mili / 1000;
         } catch (Exception ex) {
             err(ex.getMessage());
-            ex.printStackTrace();
+//            ex.printStackTrace();
             return 0;
         }
     }
@@ -235,7 +306,7 @@ public class Util {
 
         } catch (Exception ex) {
             err(ex.getMessage());
-            ex.printStackTrace();
+//            ex.printStackTrace();
             return "error";
         }
     }
@@ -375,6 +446,7 @@ public class Util {
             }
         });
         title.setMinWidth(120);
+        title.setMaxWidth(200);
         TableColumn artist = new TableColumn("Artist");
         artist.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Song, String>, ObservableValue<String>>() {
             @Override
@@ -383,6 +455,7 @@ public class Util {
             }
         });
         artist.setMinWidth(80);
+        artist.setMaxWidth(150);
         TableColumn album = new TableColumn("Album");
         album.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Song, String>, ObservableValue<String>>() {
             @Override
@@ -391,6 +464,7 @@ public class Util {
             }
         });
         album.setMinWidth(60);
+        album.setMaxWidth(100);
         TableColumn duration = new TableColumn("Duration");
         duration.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Song, String>, ObservableValue<String>>() {
             @Override

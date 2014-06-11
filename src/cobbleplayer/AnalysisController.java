@@ -16,24 +16,32 @@ import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
 import javafx.application.Platform;
+import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Insets;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TabPane;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.StackPane;
+import javafx.stage.Stage;
 import javafx.util.Callback;
 
 /**
@@ -55,7 +63,7 @@ public class AnalysisController implements Initializable, CollectionListener {
     @FXML
     CheckBox checkFreq, checkRhythm;
     @FXML
-    public static LineChart<Integer, Integer> ampChart;
+    LineChart<Integer, Integer> ampChart;
     public static boolean active = true;
     private Song cobbleSong;
     public XYChart.Series series = new XYChart.Series();
@@ -106,6 +114,22 @@ public class AnalysisController implements Initializable, CollectionListener {
                 return new ReadOnlyObjectWrapper(p.getValue().six);
             }
         });
+//        TableColumn<Item, Boolean> actionCol = new TableColumn<>("Action");
+//        actionCol.setSortable(false);
+//        actionCol.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<Item, Boolean>, ObservableValue<Boolean>>() {
+//            @Override
+//            public ObservableValue<Boolean> call(TableColumn.CellDataFeatures<Item, Boolean> features) {
+//                return new SimpleBooleanProperty(features.getValue() != null);
+//            }
+//        });
+//        actionCol.setCellFactory(new Callback<TableColumn<Item, Boolean>, TableCell<Item, Boolean>>() {
+//            @Override
+//            public TableCell<Item, Boolean> call(TableColumn<Item, Boolean> personBooleanTableColumn) {
+//                return new AddPersonCell(Main.getStage(), freqTable);
+//            }
+//        });
+//        freqTable.getColumns().add(actionCol);
+
         if (songChooser == null) {
             Util.err("SONGCHOOSER IS NULL");
         }
@@ -179,7 +203,7 @@ public class AnalysisController implements Initializable, CollectionListener {
 //        FrequencyCollector col = new FrequencyCollector(new File(cobbleSong.getFilepath()), minim);
         FrequencyCollector col = new FrequencyCollector(minim);
         col.setListener(this);
-        Thread colT =  new Thread(col);
+        Thread colT = new Thread(col);
         colT.setName("Frequency-collector");
         colT.start();
     }
@@ -234,9 +258,10 @@ public class AnalysisController implements Initializable, CollectionListener {
 //        Platform.runLater(new Runnable() {
 //            @Override
 //            public void run() {
-                ampChart.getData().add(series);
-                ampChart.getXAxis().setLabel("Time / seconds");
-                ampChart.getYAxis().setLabel("Amplitude / arbitrary units");
+        ampChart.getData().add(series);
+        ampChart.getXAxis().setLabel("Time / seconds");
+        ampChart.getYAxis().setLabel("Amplitude / arbitrary units");
+        ampChart.getYAxis().setStyle("-fx-text-fill: #4682b4;");
 //            }
 //        });
 //        new Thread(new AmplitudeAnalyser(amplitudes)).start();
@@ -254,6 +279,51 @@ public class AnalysisController implements Initializable, CollectionListener {
 
         }
     }
+
+//    private class AddPersonCell extends TableCell<Item, Boolean> {
+//
+//        // a button for adding a new person.
+//        final Button addButton = new Button("BUTTON_TITLE");
+//        // pads and centers the add button in the cell.
+//        final StackPane paddedButton = new StackPane();
+//        // records the y pos of the last button press so that the add person dialog can be shown next to the cell.
+//        final DoubleProperty buttonY = new SimpleDoubleProperty();
+//
+//        /**
+//         * AddPersonCell constructor
+//         *
+//         * @param table the table to which a new person can be added.
+//         */
+//        AddPersonCell(final TableView table) {
+//            paddedButton.setPadding(new Insets(3));
+//            paddedButton.getChildren().add(addButton);
+//            addButton.setOnMousePressed(new EventHandler<MouseEvent>() {
+//                @Override
+//                public void handle(MouseEvent mouseEvent) {
+//                    buttonY.set(mouseEvent.getScreenY());
+//                }
+//            });
+//            addButton.setOnAction(new EventHandler<ActionEvent>() {
+//                @Override
+//                public void handle(ActionEvent actionEvent) {
+//                    //PERFORM ACTION HERE
+//                    table.getSelectionModel().select(getTableRow().getIndex());
+//                }
+//            });
+//        }
+//
+//        /**
+//         * places an add button in the row only if the row is not empty.
+//         */
+//        @Override
+//        protected void updateItem(Boolean item, boolean empty) {
+//            super.updateItem(item, empty);
+//            if (!empty) {
+//                setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+//                setGraphic(paddedButton);
+//            }
+//        }
+//    }
 
     public class Item {
 

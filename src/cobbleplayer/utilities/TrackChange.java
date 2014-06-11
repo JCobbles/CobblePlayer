@@ -37,21 +37,24 @@ public class TrackChange {
      * @param s
      */
     public void addSong(Song s) {
-        if (songs.size() > con.musicTable.getItems().size() - 2) {
+        if (songs.size() > con.getMusicTable().getItems().size() - 2) {
             songs.clear();
             Util.err("Clearing saved trackchange songs");
         }
-        if (s != null && !songs.contains(s) && !Util.filterArtistContains(GUIController.filters, s.getArtist())) {
+        if(songs.contains(s)) {
+            songs.remove(songs.indexOf(s));
+        }
+        if (s != null && !songs.contains(s)) {
             songs.add(s);
         }
     }
 
     public void forceAddSong(Song s) {
-        if (songs.size() > con.musicTable.getItems().size() - 2) {
+        if (songs.size() > con.getMusicTable().getItems().size() - 2) {
             songs.clear();
             Util.err("Clearing saved trackchange songs");
         }
-        if (s != null && !Util.filterArtistContains(GUIController.filters, s.getArtist())) {
+        if (s != null) {
             songs.add(s);
         }
     }
@@ -63,8 +66,8 @@ public class TrackChange {
      * @param s the song to add
      */
     public void adjustPointer(Song s) {
-//        pointer = songs.lastIndexOf(s);
-        pointer = songs.size() - 1;
+        pointer = songs.lastIndexOf(s);
+//        pointer = songs.size() - 1;
     }
 
     public List<Song> getsongs() {
@@ -91,7 +94,7 @@ public class TrackChange {
      *
      * @return true if there is a previous song to go to
      */
-    public boolean isPrevious() {
+    public boolean hasPrevious() {
         if (getPrevious() != null) {
             pointer += 1;
             return true;
@@ -104,7 +107,7 @@ public class TrackChange {
      *
      * @return true if there is a next song to go to
      */
-    public boolean isNext() {
+    public boolean hasNext() {
         if (getNext() != null) {
             pointer -= 1;
             return true;
@@ -124,6 +127,28 @@ public class TrackChange {
         } catch (IndexOutOfBoundsException e) {
             pointer -= 1;
             return null;
+        }
+    }
+    
+    /**
+     * TrackChange.getPrevious/Next() does the incrementing to take care using this
+     */
+    public void incrementPointer() {
+        pointer++;
+    }
+
+    /**
+     * Deletes all songs after given song (exclusive
+     *
+     * @param s
+     */
+    public void deleteAllPast(Song s) {
+        if (songs.indexOf(s) < songs.size()) {
+            int start = songs.indexOf(s) + 1;
+            while (songs.size() > start) {
+                Util.err(songs.get(start).toString());
+                songs.remove(start);
+            }
         }
     }
 }
