@@ -17,6 +17,7 @@
  */
 package cobbleplayer;
 
+import cobbleplayer.loadingtasks.Loaders;
 import cobbleplayer.util.FileImporter;
 import cobbleplayer.util.ImportListener;
 import cobbleplayer.util.ModalDialog;
@@ -40,6 +41,8 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
+import javafx.concurrent.WorkerStateEvent;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
@@ -117,8 +120,20 @@ public class GUIController implements Initializable, ImportListener {
     @FXML
     ProgressIndicator multiuseProgressIndicator;
 
+    public Region getVeil() {
+        return veil;
+    }
+
+    public ProgressIndicator getMultiuseProgressIndicator() {
+        return multiuseProgressIndicator;
+    }
+
+    public TrackChange getTrackChange() {
+        return trackChange;
+    }
+    
     private final ObservableList<Song> data = FXCollections.observableArrayList();
-    private final ObservableList<Playlist> playlistData = FXCollections.observableArrayList();
+    public final ObservableList<Playlist> playlistData = FXCollections.observableArrayList();
     private final Util util = new Util();
     private boolean setSeeker = true, repeat = false;
     private final ImageView iPlay = new ImageView("/resources/play.png"), iPause = new ImageView("/resources/pause.png");
@@ -132,6 +147,7 @@ public class GUIController implements Initializable, ImportListener {
     public static ModalDialog settingsModal;
     public static ModalDialog analyserModal;
     private final TrackChange trackChange = new TrackChange(this);
+
     private final Slider[] sliders = new Slider[10];
     public static ObservableList<SettingsController.ArtistFilterItem> filters = FXCollections.observableArrayList();
 //    public static List<SettingsController.ArtistFilterItem> filters = new ArrayList<>();
@@ -251,74 +267,27 @@ public class GUIController implements Initializable, ImportListener {
             }
         });
         shuffleButton.setDefaultButton(shuffle);
+
+        multiuseProgressIndicator.setMaxSize(150, 150);
+        veil.setStyle("-fx-background-color: rgba(0, 0, 0, 0.4)");
     }
 
     private void initiateTable() {
-        musicTable.getColumns().addAll(util.initColumns());
-        musicTable.setItems(playlistData.get(0).getSongs());
-        musicTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-        musicTable.setOnMouseClicked((MouseEvent t) -> {
-            if (t.getButton().equals(MouseButton.PRIMARY) && t.getClickCount() > 1 && musicTable.getItems().size() > 0 && musicTable.getSelectionModel().getSelectedItem() != null) {
-                musicTable.setDisable(true);
-                play((Song) musicTable.getSelectionModel().getSelectedItem());
-            }
-        });
-        musicTable.setOnDragDetected((MouseEvent t) -> {
-            Dragboard db = musicTable.startDragAndDrop(TransferMode.ANY);
-//                util.write(t.getSource().toString());
-            ClipboardContent content = new ClipboardContent();
-            if (musicTable.getSelectionModel().getSelectedItem() != null) {
-                content.putString("songs");
-                db.setContent(content);
-            }
-            t.consume();
-        });
-        musicTable.setOnDragOver((DragEvent event) -> {
-            Dragboard db = event.getDragboard();
-            if (db.hasFiles()) {
-                event.acceptTransferModes(TransferMode.LINK);
-            } else {
-                event.consume();
-            }
-        });
-        musicTable.setOnKeyPressed((KeyEvent t) -> {
-            if (t.getCode().equals(KeyCode.DELETE) && musicTable.getSelectionModel().getSelectedItem() != null) {
-                Util.err("Removing " + musicTable.getSelectionModel().getSelectedItems().size() + "songs");
-                int from = (int) musicTable.getSelectionModel().getSelectedIndices().get(0);
-                int to = from + ((int) musicTable.getSelectionModel().getSelectedIndices().size());
-                Util.err("From: " + from + " to: " + to);
-                musicTable.getItems().remove(from, to);
-                musicTable.getSelectionModel().clearSelection();
-                updateItemCount();
-            } else if (t.getCode().equals(KeyCode.SPACE)) {
-                actionPause();
-            }
-        });
-        multiuseProgressIndicator.setMaxSize(150, 150);
-        veil.setStyle("-fx-background-color: rgba(0, 0, 0, 0.4)");
-        musicTable.setOnDragDropped((DragEvent event) -> {
-            final Dragboard db = event.getDragboard();
-            if (db.hasFiles()) {
+        //
+        multiuseProgressIndicator.setVisible(true);
+        veil.setVisible(true);
+        final Task<TableView> createTableTask = new Loaders.TableCreator(this);
+
+        createTableTask.setOnSucceeded(new EventHandler<WorkerStateEvent>() {
+            @Override
+            public void handle(WorkerStateEvent event) {
                 multiuseProgressIndicator.setVisible(true);
                 veil.setVisible(true);
-                musicTable.setDisable(true);
-                AnalysisController.active = false;
-                FileImporter importer = new FileImporter(activeController, db.getFiles());
-                new Thread(importer).start();
-                multiuseProgressIndicator.progressProperty().bind(importer.progressProperty);
-            }
-            event.setDropCompleted(true);
-            event.consume();
-        });
-        ContextMenu conMenu = new ContextMenu();
-        MenuItem queue = new MenuItem("Queue song");
-        queue.setOnAction((ActionEvent e) -> {
-            if (musicTable.getSelectionModel().getSelectedItem() != null) {
-                trackChange.addSong((Song) musicTable.getSelectionModel().getSelectedItem());
+                musicTable = createTableTask.getValue();
             }
         });
-        conMenu.getItems().add(queue);
-        musicTable.setContextMenu(conMenu);
+        //
+
     }
 
     private void initiatePlaylists() {
@@ -434,7 +403,7 @@ public class GUIController implements Initializable, ImportListener {
      *
      * @param song
      */
-    private void play(Song song) {
+    public void play(Song song) {
         if (trackChange.hasPrevious()) {
             trackChange.deleteAllPast(trackChange.getPrevious());
             trackChange.incrementPointer();
@@ -689,7 +658,7 @@ public class GUIController implements Initializable, ImportListener {
         AnalysisController.active = true;
     }
 
-    private void updateItemCount() {
+    public void updateItemCount() {
         items.setText("" + musicTable.getItems().size());
     }
 
