@@ -17,11 +17,12 @@
  */
 package cobbleplayer;
 
-import cobbleplayer.utilities.FileImporter;
-import cobbleplayer.utilities.ImportListener;
-import cobbleplayer.utilities.ModalDialog;
-import cobbleplayer.utilities.TrackChange;
-import cobbleplayer.utilities.Util;
+import cobbleplayer.util.FileImporter;
+import cobbleplayer.util.ImportListener;
+import cobbleplayer.util.ModalDialog;
+import cobbleplayer.util.Toast;
+import cobbleplayer.util.TrackChange;
+import cobbleplayer.util.Util;
 import java.awt.Desktop;
 import java.io.IOException;
 import java.net.URI;
@@ -84,11 +85,11 @@ import javax.sound.sampled.UnsupportedAudioFileException;
  * @author Jacob Moss This also acts as main interface class
  */
 public class GUIController implements Initializable, ImportListener {
-    
+
     @FXML
     ComboBox moreInfo, presets;
     @FXML
-    Button pauseToggleButton, repeatButton, shuffleButton, titleField, previousButton, nextButton, boredButton;
+    Button pauseToggleButton, repeatButton, shuffleButton, titleField, previousButton, nextButton, boredButton, resetButton;
     @FXML
     private SplitPane mainSplitPane; //musicSplitPane
     @FXML
@@ -112,17 +113,15 @@ public class GUIController implements Initializable, ImportListener {
     @FXML
     AnchorPane leftPaneSplit;
     @FXML
-    Region fileImportVeil;
+    Region veil;
     @FXML
-    ProgressIndicator fileImportProgressIndicator;
-    
+    ProgressIndicator multiuseProgressIndicator;
+
     private final ObservableList<Song> data = FXCollections.observableArrayList();
     private final ObservableList<Playlist> playlistData = FXCollections.observableArrayList();
     private final Util util = new Util();
-    
-    private boolean setSeeker = true, repeat = false, editing = false;
+    private boolean setSeeker = true, repeat = false;
     private final ImageView iPlay = new ImageView("/resources/play.png"), iPause = new ImageView("/resources/pause.png");
-    private double volume = 1;
     private String encoding, channels;
     public static boolean autoload = true, show = true, shuffle = false;
     private List<Playlist> importList = new ArrayList<>();
@@ -157,15 +156,14 @@ public class GUIController implements Initializable, ImportListener {
         });
         library = new Playlist("Library", data);
         playlistData.add(library);
-        
+
         initiateTable();
         initiatePlaylists();
-        Main.aC.songChooser.setItems(musicTable.getItems());
         util.write("Loaded.");
-        
+
         Util.initiateTimerTask();
     }
-    
+
     private void intiateGUIListeners() {
         boredButton.setOnAction((ActionEvent event) -> {
             actionSettings(new ActionEvent());
@@ -235,7 +233,7 @@ public class GUIController implements Initializable, ImportListener {
         volSlider.valueProperty().addListener((ObservableValue<? extends Number> ov, Number t, Number t1) -> {
             if (musicController.getCurrent() != null) {
                 musicController.setVolume(t1.doubleValue());
-                
+
             }
         });
 //        seek.setMax(1);
@@ -254,7 +252,7 @@ public class GUIController implements Initializable, ImportListener {
         });
         shuffleButton.setDefaultButton(shuffle);
     }
-    
+
     private void initiateTable() {
         musicTable.getColumns().addAll(util.initColumns());
         musicTable.setItems(playlistData.get(0).getSongs());
@@ -296,29 +294,37 @@ public class GUIController implements Initializable, ImportListener {
                 actionPause();
             }
         });
-        fileImportProgressIndicator.setMaxSize(150, 150);
-        fileImportVeil.setStyle("-fx-background-color: rgba(0, 0, 0, 0.4)");
+        multiuseProgressIndicator.setMaxSize(150, 150);
+        veil.setStyle("-fx-background-color: rgba(0, 0, 0, 0.4)");
         musicTable.setOnDragDropped((DragEvent event) -> {
             final Dragboard db = event.getDragboard();
             if (db.hasFiles()) {
-                fileImportProgressIndicator.setVisible(true);
-                fileImportVeil.setVisible(true);
+                multiuseProgressIndicator.setVisible(true);
+                veil.setVisible(true);
                 musicTable.setDisable(true);
                 AnalysisController.active = false;
                 FileImporter importer = new FileImporter(activeController, db.getFiles());
                 new Thread(importer).start();
-                fileImportProgressIndicator.progressProperty().bind(importer.progressProperty);
+                multiuseProgressIndicator.progressProperty().bind(importer.progressProperty);
             }
             event.setDropCompleted(true);
             event.consume();
         });
-        
+        ContextMenu conMenu = new ContextMenu();
+        MenuItem queue = new MenuItem("Queue song");
+        queue.setOnAction((ActionEvent e) -> {
+            if (musicTable.getSelectionModel().getSelectedItem() != null) {
+                trackChange.addSong((Song) musicTable.getSelectionModel().getSelectedItem());
+            }
+        });
+        conMenu.getItems().add(queue);
+        musicTable.setContextMenu(conMenu);
     }
-    
+
     private void initiatePlaylists() {
         playlists.setItems(playlistData);
         ContextMenu conMenu = new ContextMenu();
-        
+
         MenuItem delete = new MenuItem("Delete");
         delete.setOnAction((ActionEvent t) -> {
             final Playlist toDelete = ((Playlist) playlists.getSelectionModel().getSelectedItem());
@@ -339,11 +345,12 @@ public class GUIController implements Initializable, ImportListener {
         conMenu.getItems().add(delete);
         nameF.setStyle("-fx-background-color: black;");
         nameF.setOnKeyTyped((KeyEvent t) -> {
-            Util.err("Playlist changing name to " + nameF.getText());
             Playlist p = ((Playlist) playlists.getSelectionModel().getSelectedItem());
+            Util.err("Playlist " + p.getName() + " changing name to " + nameF.getText());
             playlistData.remove(p);
             p.setName(nameF.getText());
             playlistData.add(p);
+            playlists.getSelectionModel().select(p);
         });
         CustomMenuItem name = new CustomMenuItem(nameF);
         nameF.setOnAction((ActionEvent t) -> {
@@ -353,6 +360,13 @@ public class GUIController implements Initializable, ImportListener {
         conMenu.setOnShowing((WindowEvent t) -> {
             Util.err("Showing");
             nameF.setText(((Playlist) playlists.getSelectionModel().getSelectedItem()).getName());
+        });
+        conMenu.setOnHidden((WindowEvent e) -> {
+//            ObservableList<Playlist> temp = playlistData;
+////            playlistData.clear();
+//            playlistData.addAll(temp);
+//            playlistData.remove(playlistBeingEdited);
+//            playlistData.add(playlistBeingEdited);
         });
         conMenu.getItems().add(name);
         playlists.setContextMenu(conMenu);
@@ -373,13 +387,13 @@ public class GUIController implements Initializable, ImportListener {
         playlists.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<Playlist>() {
             @Override
             public void changed(ObservableValue<? extends Playlist> ov, Playlist old_p, Playlist new_p) {
-                if (!editing && playlistData.size() > 0) {
+                if (playlistData.size() > 0) {
                     musicTable.setItems(new_p.getSongs());
                     items.setText("" + new_p.getSongs().size());
                 }
             }
         });
-        
+
         playlists.setCellFactory(new Callback<ListView<Playlist>, ListCell<Playlist>>() {
             @Override
             public ListCell<Playlist> call(ListView<Playlist> l) {
@@ -395,7 +409,7 @@ public class GUIController implements Initializable, ImportListener {
                     }
                 };
                 playlists.setEditable(true);
-                
+
                 pl.setOnDragOver((DragEvent t) -> {
                     if (t.getDragboard().getString() != null) {
                         if (t.getDragboard().getString().equalsIgnoreCase("songs")) {
@@ -429,10 +443,10 @@ public class GUIController implements Initializable, ImportListener {
         trackChange.forceAddSong(song);
         trackChange.adjustPointer(song);
     }
-    
+
     public void set(Song song) {
         Main.setTitle(Util.APP_TITLE + " :: " + song.toString());
-        volSlider.setValue(volume);
+        volSlider.setValue(musicController.getVolume());
         seekSlider.setMax(song.getSeconds());
 //        seekSlider.setValue(0);
         titleField.setText(song.toString() + " - " + song.getArtist());
@@ -456,7 +470,7 @@ public class GUIController implements Initializable, ImportListener {
             Util.log(e.getLocalizedMessage());
         }
     }
-    
+
     private void selectPreset(int idx) {
         switch (idx) {
             case 0://general
@@ -493,7 +507,7 @@ public class GUIController implements Initializable, ImportListener {
                 break;
         }
     }
-    
+
     private void setMoreInfoBox(int idx) {
         if (musicController.getCurrent() != null) {
             switch (idx) {
@@ -509,11 +523,11 @@ public class GUIController implements Initializable, ImportListener {
             }
         }
     }
-    
+
     public TableView getMusicTable() {
         return musicTable;
     }
-    
+
     private void trackChange(boolean next) {
         if (musicController.getCurrent() == null) {
             play((Song) musicTable.getItems().get(Util.randInt(0, musicTable.getItems().size())));
@@ -578,7 +592,7 @@ public class GUIController implements Initializable, ImportListener {
             trackChange.adjustPointer(toPlay);
         }
     }
-    
+
     @FXML
     private void actionPrev(ActionEvent event) {
         if (musicController.getPosition() > 2) {
@@ -588,8 +602,9 @@ public class GUIController implements Initializable, ImportListener {
             trackChange(false);
         }
     }
-    
+
     public void actionPause() {
+        Toast.showToast("HI THERE", 5, Main.getStage());
         if (musicController.getCurrent() != null) {
             if (!musicController.playing) {
                 musicController.resume();
@@ -604,18 +619,18 @@ public class GUIController implements Initializable, ImportListener {
             }
         }
     }
-    
+
     @FXML
     public void actionPause(ActionEvent event) {
         actionPause();
     }
-    
+
     @FXML
     private void actionNext(ActionEvent event) {
 //        nextButton.setDisable(true);
         trackChange(true);
     }
-    
+
     @FXML
     private void autoAnalyse(ActionEvent v) throws InterruptedException {
         if (musicController.getCurrent() == null) {
@@ -630,7 +645,7 @@ public class GUIController implements Initializable, ImportListener {
             Main.aC.analyse(true, true);
         }
     }
-    
+
     @Override
     public void songImported(Song s) {
         if (s != null && s.getFilepath() != null) {
@@ -642,24 +657,23 @@ public class GUIController implements Initializable, ImportListener {
                     library.addSong(s);
                 }
             });
-            
         }
     }
-    
+
     @Override
     public void importFinished() {
         Platform.runLater(() -> {
-            FadeTransition ft = new FadeTransition(Duration.millis(2000), fileImportVeil);
+            FadeTransition ft = new FadeTransition(Duration.millis(2000), veil);
             ft.setFromValue(1.0);
             ft.setToValue(0);
             ft.setOnFinished((ActionEvent t) -> {
-                fileImportVeil.setVisible(false);
+                veil.setVisible(false);
             });
-            FadeTransition ft2 = new FadeTransition(Duration.millis(2500), fileImportVeil);
+            FadeTransition ft2 = new FadeTransition(Duration.millis(2500), veil);
             ft2.setFromValue(1.0);
             ft2.setToValue(0);
             ft2.setOnFinished((ActionEvent t) -> {
-                fileImportProgressIndicator.setVisible(false);
+                multiuseProgressIndicator.setVisible(false);
             });
             ParallelTransition pt = new ParallelTransition(ft, ft2);
             pt.play();
@@ -670,14 +684,15 @@ public class GUIController implements Initializable, ImportListener {
                 col.setVisible(true);
             }
             Main.sC.populateFilterDropdowns(musicTable);
+            Main.aC.populateSongsDropdown(musicTable.getItems());
         });
         AnalysisController.active = true;
     }
-    
+
     private void updateItemCount() {
         items.setText("" + musicTable.getItems().size());
     }
-    
+
     public void updateSeeker(double value) {
         seeker.setProgress(value);
 //        if (setSeeker) {
@@ -685,27 +700,27 @@ public class GUIController implements Initializable, ImportListener {
 //        }
         //t1.setText(currentSong.getPositionAsString());
     }
-    
+
     @FXML
     private void actionClose(ActionEvent ev) {
         Main.close();
     }
-    
+
     @FXML
     private void actionAutoload(ActionEvent ev) {
         autoload = !autoload;
     }
-    
+
     @FXML
     private void actionAbout(ActionEvent ev) {
         List<Button> b = new ArrayList<>();
         Button bt = new Button("OK");
         bt.setOnAction(Util.cancelEvent);
         b.add(bt);
-        
+
         new ModalDialog("About", "Music Player \n'Cobble Player' \n(C) 2014 Jacob Moss", b, 150, 90);
     }
-    
+
     @FXML
     private void actionReportBug(ActionEvent ev) {
         String url = "http://cobbles.biz.ht/downloads.php?id=cobblePlayer#one";
@@ -718,7 +733,7 @@ public class GUIController implements Initializable, ImportListener {
             }
         }
     }
-    
+
     @FXML
     private void actionJumpToCurrent(ActionEvent e) {
         if (musicController.getCurrent() != null) {
@@ -727,30 +742,27 @@ public class GUIController implements Initializable, ImportListener {
             musicTable.scrollTo(idx);
         }
     }
-    
+
     @FXML
     private void actionResetEqualizer(ActionEvent e) {
         for (Slider s : sliders) {
             s.setValue(0);
         }
     }
-    
+
     @FXML
     private void actionResetRate(ActionEvent e) {
         rateSlider.setValue(1);
         trackChange.getsongs().stream().forEach((s)
                 -> Util.err(s.toString()));
         Util.err("Pointer: " + trackChange.getPointer());
-        for (Object o : musicTable.getItems()) {
-            System.err.println(((TableColumn) musicTable.getColumns().get(0)).getCellData(o));
-        }
     }
-    
+
     @FXML
     private void actionResetBalance(ActionEvent e) {
         balanceSlider.setValue(0);
     }
-    
+
     @FXML
     private void actionQuickfix(ActionEvent e) {
         musicController.stop();
@@ -758,35 +770,14 @@ public class GUIController implements Initializable, ImportListener {
         nextButton.setDisable(false);
         previousButton.setDisable(false);
     }
-    
+
     @FXML
     private void actionNewPlaylist(ActionEvent ev) {
         playlistData.add(new Playlist("New playlist", null));
     }
-    
+
     boolean edit2 = false;
 
-//    @FXML
-//    private void actionEditPlaylists(ActionEvent e) {
-//        edit2 = !edit2;
-//        pNameField.setEditable(edit2);
-//        pNameField.setDisable(!edit2);
-//    }
-//
-//    @FXML
-//    private void actionCommitPlaylistEdit(ActionEvent e) {
-//        editing = true;
-//        Playlist edit = (Playlist) playlists.getSelectionModel().getSelectedItem();
-//        if (edit != null) {
-//            Util.err("Editting name of " + edit.getName());
-//            playlistData.remove(edit);
-////            edit.setName(pNameField.getText());
-//            playlistData.add(edit);
-//
-//        }
-//
-//        editing = false;
-//    }
     @Deprecated
     private void actionDeletePlaylist(ActionEvent e) {
         final Playlist delete = (Playlist) playlists.getSelectionModel().getSelectedItem();
@@ -805,21 +796,21 @@ public class GUIController implements Initializable, ImportListener {
                     + "the playlist '" + delete.getName() + "'?",
                     buttons, 200, 70);
         }
-        
+
     }
-    
+
     @FXML
     private void actionShuffleToggle() {
         shuffle = !shuffle;
         shuffleButton.setDefaultButton(shuffle);
     }
-    
+
     @FXML
     private void actionRepeatToggle(ActionEvent ev) {
         repeat = !repeat;
         repeatButton.setDefaultButton(repeat);
     }
-    
+
     @FXML
     private void actionSettings(ActionEvent ig) {
         Properties prop = Util.openProp(Util.CONFIG_FILENAME);
@@ -834,10 +825,11 @@ public class GUIController implements Initializable, ImportListener {
         settingsModal = new ModalDialog(Main.settings, ev);
         settingsModal.setTitle("Settings");
     }
-    
+
     @FXML
     private void actionAnalyser(ActionEvent ig) {
-        Main.aC.analyse.setDisable(false);
+//        Main.aC.analyse.setDisable(false);
+        Main.aC.populateSongsDropdown(musicTable.getItems());
         EventHandler<WindowEvent> ev = (WindowEvent t) -> {
             Main.aC.reset();
         };
@@ -845,35 +837,24 @@ public class GUIController implements Initializable, ImportListener {
         analyserModal.setTitle("Analyser");
     }
 
-//    @FXML
-//    private void actionShow() {
-//        show = !show;
-//    }
     @FXML
     private void sliderMouseEnter(MouseEvent ev) {
         setSeeker = false;
-//        musicController.seekThread.pause();
-//        seekSlider.valueProperty().unbind();
 //        musicController.seekTask.pause();
 //        seekSlider.valueProperty().unbind();
 //        seek.valueProperty().unbind();
     }
-    
+
     @FXML
     private void sliderMouseExit(MouseEvent ev) {
         musicController.seek(seekSlider.getValue());
         setSeeker = true;
     }
 
-//    public static void resetMusicSplitPane() {
-//        musicSplitPane.setDividerPosition(0, 0.7);
-////        Util.err("height changed");
-//    }
     public void resetMainSplitPane() {
-//        Util.err("width changed");
         mainSplitPane.setDividerPosition(0, 0.22);
     }
-    
+
     public void songEnded() {
         util.write("Song ended");
         if (repeat) {
@@ -882,18 +863,18 @@ public class GUIController implements Initializable, ImportListener {
             trackChange(true);
         }
     }
-    
+
     @Deprecated
     public void updateTimes(final String cur) {
         Platform.runLater(() -> {
             startTime.setText(cur);
         });
     }
-    
+
     public List<Playlist> getPlaylists() {
         return playlistData;
     }
-    
+
     public void setPlaylists(List<Playlist> playlists) {
         importList = playlists;
     }
