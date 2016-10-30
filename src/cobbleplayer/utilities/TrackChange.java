@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package cobbleplayer.utilities;
 
 import cobbleplayer.GUIController;
@@ -129,7 +124,7 @@ public class TrackChange {
             return null;
         }
     }
-    
+
     /**
      * TrackChange.getPrevious/Next() does the incrementing to take care using this
      */

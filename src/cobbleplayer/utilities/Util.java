@@ -68,7 +68,7 @@ import org.jaudiotagger.tag.Tag;
 import org.jaudiotagger.tag.TagException;
 
 /*
- * utility methods 
+ * utility methods
  *
  * @author Jacob Moss
  */
@@ -135,6 +135,10 @@ public class Util {
 
     }
 
+    /**
+    * TODO fix this
+    *
+    */
     public static void initiateTimerTask() {
         TimerTask task = new TimerTask() {
             @Override
@@ -185,7 +189,7 @@ public class Util {
             }
             AudioFile f = AudioFileIO.read(input);
             Tag tag = f.getTag();
-            
+
             if (tag.hasField(FieldKey.TITLE)) {
                 return tag.getFirst(FieldKey.TITLE);
             } else {
@@ -212,7 +216,7 @@ public class Util {
             }
             AudioFile f = AudioFileIO.read(input);
             Tag tag = f.getTag();
-            
+
             if (tag.hasField(FieldKey.ARTIST)) {
                 String all = "";
                 if (tag.getAll(FieldKey.ARTIST).size() > 1) {
@@ -256,7 +260,7 @@ public class Util {
             Tag tag = f.getTag();
             if (tag.hasField(FieldKey.ALBUM)) {
                 return tag.getFirst(FieldKey.ALBUM);
-                
+
             } else {
                 return "-";
             }
